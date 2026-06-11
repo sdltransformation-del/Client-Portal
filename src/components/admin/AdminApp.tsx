@@ -198,7 +198,7 @@ export default function AdminApp() {
         </div>
       </nav>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', minHeight: '100vh', paddingTop: '64px' }}>
+      <div style={{ minHeight: '100vh', paddingTop: '64px' }}>
         {/* Sidebar */}
         <aside style={{ background: 'white', borderRight: '1px solid var(--stone-200)', padding: '24px 0', position: 'fixed', left: 0, top: '64px', bottom: 0, width: '280px', overflowY: 'auto' }}>
           <div style={{ padding: '0 16px', marginBottom: '24px' }}>
