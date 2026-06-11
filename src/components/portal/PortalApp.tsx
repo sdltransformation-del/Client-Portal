@@ -62,13 +62,10 @@ export default function PortalApp({ client, adminEvidence, userEmail }: Props) {
         borderBottom: '1px solid rgba(27,79,216,0.1)'
       }}>
         <div style={{ fontSize: '0.9rem', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--stone-900)' }}>
-          Mind Your Body
+          The Way Back
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--blue)', background: 'rgba(27,79,216,0.1)', borderRadius: '100px', padding: '5px 14px' }}>
-            Day {day} of 90
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--stone-700)' }}>
+<div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--stone-700)' }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, color: 'white' }}>
               {initials}
             </div>

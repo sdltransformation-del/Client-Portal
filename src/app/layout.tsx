@@ -16,7 +16,7 @@ const instrumentSerif = Instrument_Serif({
 })
 
 export const metadata: Metadata = {
-  title: 'Mind Your Body',
+  title: 'The Way Back',
   description: 'Your chronic pain coaching portal',
 }
 

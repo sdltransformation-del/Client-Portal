@@ -35,7 +35,7 @@ export default function LoginPage() {
         borderRadius: '20px', padding: '40px 36px'
       }}>
         <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '28px' }}>
-          Mind Your Body
+          The Way Back
         </div>
         <div style={{ fontFamily: 'var(--font-instrument, var(--display))', fontSize: '1.8rem', color: 'white', marginBottom: '6px' }}>
           Client portal
