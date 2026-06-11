@@ -6,15 +6,6 @@ const TYPE_LABELS: Record<string, string> = { study: 'Study', article: 'Article'
 
 export default function ResourcesTab() {
   const [activeSection, setActiveSection] = useState<string | null>(null)
-  const [readIds, setReadIds] = useState<Set<string>>(new Set())
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
-
-  function toggleRead(id: string) {
-    setReadIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
-  }
-  function toggleSaved(id: string) {
-    setSavedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
-  }
 
   const categories = RES_CATEGORIES.filter(c => c.id !== 'books')
   const grouped = Object.fromEntries(categories.map(c => [c.id, RESOURCES.filter(r => r.cat === c.id && r.type !== 'book')]))
@@ -43,35 +34,20 @@ export default function ResourcesTab() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {activeItems.map(r => (
-            <div key={r.id} style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '22px 24px', opacity: readIds.has(r.id) ? 0.6 : 1, transition: 'opacity 0.2s' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '12px' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '0.67rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)', background: 'rgba(27,79,216,0.08)', padding: '2px 9px', borderRadius: '100px' }}>{TYPE_LABELS[r.type] || r.type}</span>
-                  </div>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '4px' }}>{r.title}</div>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>{r.source}</div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', flexShrink: 0 }}>
-                  <button onClick={() => toggleSaved(r.id)} style={{ fontFamily: 'inherit', fontSize: '0.7rem', fontWeight: 700, padding: '5px 12px', borderRadius: '100px', border: '1.5px solid', cursor: 'pointer', background: savedIds.has(r.id) ? 'var(--blue)' : 'white', color: savedIds.has(r.id) ? 'white' : 'var(--text-muted)', borderColor: savedIds.has(r.id) ? 'var(--blue)' : 'var(--stone-200)', whiteSpace: 'nowrap' }}>
-                    {savedIds.has(r.id) ? '★ Saved' : '☆ Save'}
-                  </button>
-                  <button onClick={() => toggleRead(r.id)} style={{ fontFamily: 'inherit', fontSize: '0.7rem', fontWeight: 700, padding: '5px 12px', borderRadius: '100px', border: `1.5px solid ${readIds.has(r.id) ? '#15803d' : 'var(--stone-200)'}`, cursor: 'pointer', background: readIds.has(r.id) ? '#dcfce7' : 'white', color: readIds.has(r.id) ? '#15803d' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                    {readIds.has(r.id) ? '✓ Read' : 'Mark read'}
-                  </button>
-                </div>
+            <div key={r.id} style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '22px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '0.67rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)', background: 'rgba(27,79,216,0.08)', padding: '2px 9px', borderRadius: '100px' }}>{TYPE_LABELS[r.type] || r.type}</span>
               </div>
-
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '4px' }}>{r.title}</div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px' }}>{r.source}</div>
               <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: r.finding ? '14px' : '0' }}>{r.desc}</div>
-
               {r.finding && (
-                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--stone-900)', lineHeight: 1.6, background: 'rgba(27,79,216,0.05)', borderLeft: '3px solid var(--blue)', padding: '10px 14px', borderRadius: '0 8px 8px 0', marginBottom: r.url ? '14px' : '0' }}>
+                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--stone-900)', lineHeight: 1.6, background: 'rgba(27,79,216,0.05)', borderLeft: '3px solid var(--blue)', padding: '10px 14px', borderRadius: '0 8px 8px 0', marginBottom: r.url ? '0' : '0' }}>
                   {r.finding}
                 </div>
               )}
-
               {r.url && (
-                <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--blue)', textDecoration: 'none', marginTop: '12px' }}>
+                <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--blue)', textDecoration: 'none', marginTop: '14px' }}>
                   Read full article
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 </a>

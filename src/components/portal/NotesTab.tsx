@@ -36,7 +36,7 @@ export default function NotesTab() {
         <span style={{ width: '20px', height: '2px', background: 'var(--blue)', borderRadius: '1px', display: 'block' }} />Conviction Journal
       </div>
       <h1 style={{ fontFamily: 'var(--font-instrument)', fontSize: 'clamp(1.8rem,4vw,2.6rem)', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '8px' }}>What happened today?</h1>
-      <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '36px', maxWidth: '520px' }}>Write anything that strengthened your conviction — a moment of doubt that passed, a movement you made without fear, a realisation, a feeling you finally let yourself feel. Everything counts.</p>
+      <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '36px', maxWidth: '520px' }}>Write anything that strengthened your conviction. A moment of doubt that passed, a movement you made without fear, a realisation, a feeling you finally let yourself feel. Everything counts.</p>
 
       {/* Composer */}
       <div style={{ background: 'white', border: '1.5px solid rgba(27,79,216,0.12)', borderRadius: '18px', padding: '22px 24px', marginBottom: '32px' }}>
