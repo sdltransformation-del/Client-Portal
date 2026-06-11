@@ -1,16 +1,19 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
-import { SECTIONS } from '@/lib/data'
+import { SECTIONS, VIDEOS, RESOURCES } from '@/lib/data'
 
 const ADMIN_PASSWORD = 'myb-admin-2026'
 
 interface Client {
   id: string; name: string; email: string; start_date: string | null; day_number: number | null; notes: string | null; created_at: string
 }
-interface EvidenceEntry {
-  id?: string; text: string; saved: boolean
+interface EvidenceEntry { id?: string; text: string; saved: boolean }
+interface Assignment {
+  id: string; client_id: string; day_number: number; type: string; content_id: string | null; title: string; notes: string | null
 }
+
+type AdminTab = 'details' | 'evidence' | 'assignments'
 
 export default function AdminApp() {
   const [authed, setAuthed] = useState(false)
@@ -18,21 +21,35 @@ export default function AdminApp() {
   const [pwdError, setPwdError] = useState(false)
   const [clients, setClients] = useState<Client[]>([])
   const [currentClient, setCurrentClient] = useState<Client | null>(null)
+  const [adminTab, setAdminTab] = useState<AdminTab>('details')
+
+  // Details
+  const [editName, setEditName] = useState(''); const [editEmail, setEditEmail] = useState('')
+  const [editDate, setEditDate] = useState(''); const [editDay, setEditDay] = useState(1); const [editNotes, setEditNotes] = useState('')
+  const [dirty, setDirty] = useState(false)
+
+  // Evidence
   const [pendingEvidence, setPendingEvidence] = useState<Record<string, EvidenceEntry[]>>({})
   const [activeSection, setActiveSection] = useState('s1')
-  const [dirty, setDirty] = useState(false)
+  const [evInput, setEvInput] = useState('')
+
+  // Assignments
+  const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [newAssignDay, setNewAssignDay] = useState(1)
+  const [newAssignType, setNewAssignType] = useState<'video' | 'article' | 'exercise'>('video')
+  const [newAssignContentId, setNewAssignContentId] = useState('')
+  const [newAssignTitle, setNewAssignTitle] = useState('')
+  const [newAssignNotes, setNewAssignNotes] = useState('')
+  const [assignFilter, setAssignFilter] = useState<number | 'all'>('all')
+
+  // Modal
   const [showModal, setShowModal] = useState(false)
   const [newName, setNewName] = useState(''); const [newEmail, setNewEmail] = useState(''); const [newDate, setNewDate] = useState('')
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null)
-  const [editName, setEditName] = useState(''); const [editEmail, setEditEmail] = useState(''); const [editDate, setEditDate] = useState(''); const [editDay, setEditDay] = useState(1); const [editNotes, setEditNotes] = useState('')
-  const [evInput, setEvInput] = useState('')
 
   const supabase = createSupabaseClient()
 
-  function showToast(msg: string, type = '') {
-    setToast({ msg, type })
-    setTimeout(() => setToast(null), 3000)
-  }
+  function showToast(msg: string, type = '') { setToast({ msg, type }); setTimeout(() => setToast(null), 3000) }
 
   function login() {
     if (pwdInput === ADMIN_PASSWORD) { setAuthed(true); loadClients() }
@@ -45,23 +62,20 @@ export default function AdminApp() {
   }
 
   async function selectClient(id: string) {
-    const [{ data: clientData }, { data: evData }] = await Promise.all([
+    const [{ data: clientData }, { data: evData }, { data: assignData }] = await Promise.all([
       supabase.from('clients').select('*').eq('id', id).limit(1),
-      supabase.from('evidence').select('*').eq('client_id', id).order('created_at', { ascending: true })
+      supabase.from('evidence').select('*').eq('client_id', id).order('created_at', { ascending: true }),
+      supabase.from('assignments').select('*').eq('client_id', id).order('day_number', { ascending: true })
     ])
-    const c = clientData?.[0]
-    if (!c) return
+    const c = clientData?.[0]; if (!c) return
     setCurrentClient(c)
     setEditName(c.name); setEditEmail(c.email); setEditDate(c.start_date || ''); setEditDay(c.day_number || 1); setEditNotes(c.notes || '')
     const pe: Record<string, EvidenceEntry[]> = {}
     SECTIONS.forEach(s => { pe[s.id] = [] })
-    for (const e of evData || []) {
-      if (pe[e.section]) pe[e.section].push({ id: e.id, text: e.content, saved: true })
-    }
+    for (const e of evData || []) { if (pe[e.section]) pe[e.section].push({ id: e.id, text: e.content, saved: true }) }
     setPendingEvidence(pe)
-    setDirty(false)
-    setEvInput('')
-    loadClients()
+    setAssignments(assignData || [])
+    setDirty(false); setEvInput(''); setAdminTab('details'); loadClients()
   }
 
   async function saveClient() {
@@ -73,9 +87,7 @@ export default function AdminApp() {
       SECTIONS.forEach(s => { (pendingEvidence[s.id] || []).forEach(e => { allEntries.push({ client_id: currentClient.id, section: s.id, content: e.text, added_by: 'admin' }) }) })
       if (allEntries.length > 0) await supabase.from('evidence').insert(allEntries)
       setCurrentClient(prev => prev ? { ...prev, name: editName, email: editEmail, start_date: editDate, day_number: editDay, notes: editNotes } : null)
-      setDirty(false)
-      loadClients()
-      showToast('Saved successfully', 'success')
+      setDirty(false); loadClients(); showToast('Saved successfully', 'success')
     } catch { showToast('Error saving', 'error') }
   }
 
@@ -91,21 +103,62 @@ export default function AdminApp() {
   async function deleteClient(id: string) {
     if (!confirm('Delete this client and all their data? This cannot be undone.')) return
     await supabase.from('clients').delete().eq('id', id)
-    setCurrentClient(null); setDirty(false); loadClients()
-    showToast('Client deleted', 'success')
+    setCurrentClient(null); setDirty(false); loadClients(); showToast('Client deleted', 'success')
   }
 
+  // Evidence helpers
   function addEvEntry() {
-    const text = evInput.trim()
-    if (!text) return
+    const text = evInput.trim(); if (!text) return
     setPendingEvidence(prev => ({ ...prev, [activeSection]: [...(prev[activeSection] || []), { id: undefined, text, saved: false }] }))
-    setEvInput('')
+    setEvInput(''); setDirty(true)
+  }
+  function removeEvEntry(sectionId: string, idx: number) {
+    setPendingEvidence(prev => { const u = [...(prev[sectionId] || [])]; u.splice(idx, 1); return { ...prev, [sectionId]: u } })
     setDirty(true)
   }
 
-  function removeEvEntry(sectionId: string, idx: number) {
-    setPendingEvidence(prev => { const updated = [...(prev[sectionId] || [])]; updated.splice(idx, 1); return { ...prev, [sectionId]: updated } })
-    setDirty(true)
+  // Assignment helpers
+  function getContentOptions() {
+    if (newAssignType === 'video') return VIDEOS.map(v => ({ id: v.id, label: v.title }))
+    if (newAssignType === 'article') return RESOURCES.filter(r => r.type !== 'book').map(r => ({ id: r.id, label: r.title }))
+    return [
+      { id: 'journaling', label: 'Journaling' },
+      { id: 'somatic_tracking', label: 'Somatic Tracking' },
+      { id: 'reading', label: 'Reading' },
+    ]
+  }
+
+  function handleContentSelect(id: string) {
+    setNewAssignContentId(id)
+    // Auto-fill title
+    if (newAssignType === 'video') {
+      const v = VIDEOS.find(v => v.id === id); if (v) setNewAssignTitle(v.title)
+    } else if (newAssignType === 'article') {
+      const r = RESOURCES.find(r => r.id === id); if (r) setNewAssignTitle(r.title)
+    } else {
+      const labels: Record<string, string> = { journaling: 'Journaling', somatic_tracking: 'Somatic Tracking', reading: 'Reading' }
+      setNewAssignTitle(labels[id] || id)
+    }
+  }
+
+  async function addAssignment() {
+    if (!currentClient || !newAssignTitle.trim()) return
+    const { data } = await supabase.from('assignments').insert({
+      client_id: currentClient.id,
+      day_number: newAssignDay,
+      type: newAssignType,
+      content_id: newAssignContentId || null,
+      title: newAssignTitle.trim(),
+      notes: newAssignNotes.trim() || null
+    }).select()
+    if (data?.[0]) setAssignments(prev => [...prev, data[0]])
+    setNewAssignContentId(''); setNewAssignTitle(''); setNewAssignNotes('')
+    showToast('Assignment added', 'success')
+  }
+
+  async function deleteAssignment(id: string) {
+    await supabase.from('assignments').delete().eq('id', id)
+    setAssignments(prev => prev.filter(a => a.id !== id))
   }
 
   function initials(name: string) { return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) }
@@ -114,11 +167,15 @@ export default function AdminApp() {
     return new Date(c.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
   }
 
+  const filteredAssignments = assignFilter === 'all' ? assignments : assignments.filter(a => a.day_number === assignFilter)
+  const uniqueDays = [...new Set(assignments.map(a => a.day_number))].sort((a, b) => a - b)
+  const activeSecObj = SECTIONS.find(s => s.id === activeSection)!
+
   if (!authed) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--navy)', padding: '24px' }}>
         <div style={{ width: '100%', maxWidth: '400px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', padding: '40px 36px' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '28px' }}>Mind Your Body</div>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '28px' }}>The Way Back</div>
           <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.8rem', color: 'white', marginBottom: '6px' }}>Admin panel</div>
           <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: '28px' }}>Enter your password to continue</div>
           <label style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '7px' }}>Password</label>
@@ -130,14 +187,11 @@ export default function AdminApp() {
     )
   }
 
-  const sectionEntries = pendingEvidence[activeSection] || []
-  const activeSecObj = SECTIONS.find(s => s.id === activeSection)!
-
   return (
     <div style={{ minHeight: '100vh', background: 'var(--stone-50)' }}>
       {/* Topbar */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'var(--navy)', padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'white' }}>Mind Your Body</div>
+        <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'white' }}>The Way Back</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', background: 'var(--blue)', color: 'white', padding: '3px 10px', borderRadius: '100px' }}>Admin</span>
           <button onClick={() => { setAuthed(false); setPwdInput('') }} style={{ fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none', cursor: 'pointer' }}>Sign out</button>
@@ -157,11 +211,7 @@ export default function AdminApp() {
               {clients.length === 0
                 ? <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', padding: '8px', textAlign: 'center' }}>No clients yet</div>
                 : clients.map(c => (
-                  <div key={c.id} onClick={() => selectClient(c.id)} style={{
-                    display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '9px', cursor: 'pointer',
-                    transition: 'all 0.15s', border: `1px solid ${currentClient?.id === c.id ? 'rgba(27,79,216,0.2)' : 'transparent'}`,
-                    background: currentClient?.id === c.id ? 'var(--blue-pale)' : 'transparent'
-                  }}>
+                  <div key={c.id} onClick={() => selectClient(c.id)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '9px', cursor: 'pointer', transition: 'all 0.15s', border: `1px solid ${currentClient?.id === c.id ? 'rgba(27,79,216,0.2)' : 'transparent'}`, background: currentClient?.id === c.id ? 'var(--blue-pale)' : 'transparent' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800, color: 'white', flexShrink: 0 }}>{initials(c.name)}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.85rem', fontWeight: 700, color: currentClient?.id === c.id ? 'var(--blue)' : 'var(--stone-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
@@ -182,12 +232,12 @@ export default function AdminApp() {
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
               </svg>
               <h2 style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.4rem', fontWeight: 400, color: 'var(--stone-700)', marginBottom: '8px' }}>Select or create a client</h2>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', maxWidth: '320px', lineHeight: 1.6 }}>Choose a client from the sidebar to view and edit their profile and evidence, or create a new one.</p>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', maxWidth: '320px', lineHeight: 1.6 }}>Choose a client from the sidebar to view and edit their profile, evidence, and assignments.</p>
             </div>
           ) : (
             <>
               {/* Profile header */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px', marginBottom: '32px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px', marginBottom: '28px', flexWrap: 'wrap' }}>
                 <div>
                   <div style={{ fontFamily: 'var(--font-instrument)', fontSize: 'clamp(1.6rem,3vw,2.2rem)', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>{currentClient.name}</div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Started {startDate(currentClient)} &nbsp;·&nbsp; Day {currentClient.day_number || 1} &nbsp;·&nbsp; {currentClient.email}</div>
@@ -198,84 +248,171 @@ export default function AdminApp() {
                 </button>
               </div>
 
-              {/* Client details card */}
-              <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '18px' }}>Client details</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  {[
-                    { label: 'Full name', val: editName, set: setEditName, type: 'text' },
-                    { label: 'Email', val: editEmail, set: setEditEmail, type: 'email' },
-                    { label: 'Start date', val: editDate, set: setEditDate, type: 'date' },
-                    { label: 'Current day', val: String(editDay), set: (v: string) => setEditDay(parseInt(v) || 1), type: 'number' },
-                  ].map(f => (
-                    <div key={f.label}>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>{f.label}</label>
-                      <input type={f.type} value={f.val} onChange={e => { f.set(e.target.value); setDirty(true) }} style={{ fontFamily: 'inherit', fontSize: '0.9rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', outline: 'none', width: '100%' }} />
-                    </div>
-                  ))}
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (internal only)</label>
-                    <textarea value={editNotes} onChange={e => { setEditNotes(e.target.value); setDirty(true) }} style={{ fontFamily: 'inherit', fontSize: '0.9rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', outline: 'none', resize: 'vertical', minHeight: '80px', lineHeight: 1.6, width: '100%' }} />
-                  </div>
-                </div>
+              {/* Inner tabs */}
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'white', border: '1px solid var(--stone-200)', borderRadius: '12px', padding: '4px' }}>
+                {(['details', 'evidence', 'assignments'] as AdminTab[]).map(t => (
+                  <button key={t} onClick={() => setAdminTab(t)} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 700, padding: '9px 16px', borderRadius: '9px', border: 'none', background: adminTab === t ? 'var(--blue)' : 'none', color: adminTab === t ? 'white' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize' }}>
+                    {t}{t === 'assignments' ? ` (${assignments.length})` : ''}
+                  </button>
+                ))}
               </div>
 
-              {/* Evidence card */}
-              <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px', marginBottom: '80px' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '18px' }}>Personal Evidence Sheet</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '16px' }}>
-                  {/* Tabs */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    {SECTIONS.map((s, i) => {
-                      const count = (pendingEvidence[s.id] || []).length
-                      const active = s.id === activeSection
-                      return (
-                        <button key={s.id} onClick={() => { setActiveSection(s.id); setEvInput('') }} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '10px 12px', borderRadius: '8px', fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 600, color: active ? 'var(--blue)' : 'var(--text-muted)', background: active ? 'var(--blue-pale)' : 'none', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.15s' }}>
-                          <span style={{ width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0, background: active ? 'var(--blue)' : 'var(--stone-100)', color: active ? 'white' : 'var(--text-muted)', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
-                          <span style={{ flex: 1, lineHeight: 1.3 }}>{s.title}</span>
-                          {count > 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: 'rgba(27,79,216,0.1)', color: 'var(--blue)', padding: '1px 7px', borderRadius: '100px' }}>{count}</span>}
+              {/* ── DETAILS TAB ── */}
+              {adminTab === 'details' && (
+                <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '18px' }}>Client details</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    {[
+                      { label: 'Full name', val: editName, set: setEditName, type: 'text' },
+                      { label: 'Email', val: editEmail, set: setEditEmail, type: 'email' },
+                      { label: 'Start date', val: editDate, set: setEditDate, type: 'date' },
+                      { label: 'Current day', val: String(editDay), set: (v: string) => setEditDay(parseInt(v) || 1), type: 'number' },
+                    ].map(f => (
+                      <div key={f.label}>
+                        <label style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>{f.label}</label>
+                        <input type={f.type} value={f.val} onChange={e => { f.set(e.target.value); setDirty(true) }} style={{ fontFamily: 'inherit', fontSize: '0.9rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', outline: 'none', width: '100%' }} />
+                      </div>
+                    ))}
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (internal only)</label>
+                      <textarea value={editNotes} onChange={e => { setEditNotes(e.target.value); setDirty(true) }} style={{ fontFamily: 'inherit', fontSize: '0.9rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', outline: 'none', resize: 'vertical', minHeight: '80px', lineHeight: 1.6, width: '100%' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── EVIDENCE TAB ── */}
+              {adminTab === 'evidence' && (
+                <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '18px' }}>Personal Evidence Sheet</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '16px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                      {SECTIONS.map((s, i) => {
+                        const count = (pendingEvidence[s.id] || []).length
+                        const active = s.id === activeSection
+                        return (
+                          <button key={s.id} onClick={() => { setActiveSection(s.id); setEvInput('') }} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '10px 12px', borderRadius: '8px', fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 600, color: active ? 'var(--blue)' : 'var(--text-muted)', background: active ? 'var(--blue-pale)' : 'none', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.15s' }}>
+                            <span style={{ width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0, background: active ? 'var(--blue)' : 'var(--stone-100)', color: active ? 'white' : 'var(--text-muted)', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+                            <span style={{ flex: 1, lineHeight: 1.3 }}>{s.title}</span>
+                            {count > 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: 'rgba(27,79,216,0.1)', color: 'var(--blue)', padding: '1px 7px', borderRadius: '100px' }}>{count}</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '14px', padding: '22px', minHeight: '320px' }}>
+                      <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.2rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>{activeSecObj.title}</div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '18px' }}>{activeSecObj.desc}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+                        {(pendingEvidence[activeSection] || []).length === 0
+                          ? <div style={{ fontSize: '0.82rem', color: 'var(--stone-300)', fontStyle: 'italic', padding: '4px 0 10px' }}>No entries yet.</div>
+                          : (pendingEvidence[activeSection] || []).map((e, idx) => (
+                            <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '9px', padding: '10px 12px' }}>
+                              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--blue)', flexShrink: 0, marginTop: '6px', opacity: 0.5 }} />
+                              <div style={{ flex: 1, fontSize: '0.88rem', color: 'var(--stone-900)', lineHeight: 1.55 }}>{e.text}</div>
+                              <button onClick={() => removeEvEntry(activeSection, idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', width: '24px', height: '24px', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--stone-300)', flexShrink: 0 }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                              </button>
+                            </div>
+                          ))
+                        }
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                        <textarea value={evInput} onChange={e => setEvInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addEvEntry() } }} placeholder="Add an evidence entry…" rows={2} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.88rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', resize: 'none', outline: 'none', minHeight: '42px', lineHeight: 1.5 }} />
+                        <button onClick={addEvEntry} style={{ fontFamily: 'inherit', fontSize: '0.8rem', fontWeight: 700, padding: '10px 16px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>Add
                         </button>
-                      )
-                    })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── ASSIGNMENTS TAB ── */}
+              {adminTab === 'assignments' && (
+                <div>
+                  {/* Add assignment form */}
+                  <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px', marginBottom: '20px' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '18px' }}>Add assignment</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px 160px 1fr', gap: '12px', marginBottom: '12px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Day</label>
+                        <input type="number" min="1" value={newAssignDay} onChange={e => setNewAssignDay(parseInt(e.target.value) || 1)} style={{ fontFamily: 'inherit', fontSize: '0.9rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', outline: 'none', width: '100%' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Type</label>
+                        <select value={newAssignType} onChange={e => { setNewAssignType(e.target.value as 'video'|'article'|'exercise'); setNewAssignContentId(''); setNewAssignTitle('') }} style={{ fontFamily: 'inherit', fontSize: '0.9rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', outline: 'none', width: '100%' }}>
+                          <option value="video">Video</option>
+                          <option value="article">Article</option>
+                          <option value="exercise">Exercise</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Content</label>
+                        <select value={newAssignContentId} onChange={e => handleContentSelect(e.target.value)} style={{ fontFamily: 'inherit', fontSize: '0.9rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', outline: 'none', width: '100%' }}>
+                          <option value="">— Select —</option>
+                          {getContentOptions().map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Title (auto-filled, editable)</label>
+                      <input value={newAssignTitle} onChange={e => setNewAssignTitle(e.target.value)} placeholder="Assignment title…" style={{ fontFamily: 'inherit', fontSize: '0.9rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', outline: 'none', width: '100%' }} />
+                    </div>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Instructions for client (optional)</label>
+                      <textarea value={newAssignNotes} onChange={e => setNewAssignNotes(e.target.value)} placeholder="e.g. Focus on the part about somatic tracking, apply it to your shoulder pain…" rows={2} style={{ fontFamily: 'inherit', fontSize: '0.9rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', outline: 'none', resize: 'none', lineHeight: 1.5, width: '100%' }} />
+                    </div>
+                    <button onClick={addAssignment} style={{ fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 700, padding: '11px 24px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '7px' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                      Add to Day {newAssignDay}
+                    </button>
                   </div>
 
-                  {/* Panel */}
-                  <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '14px', padding: '22px', minHeight: '320px' }}>
-                    <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.2rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>{activeSecObj.title}</div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '18px' }}>{activeSecObj.desc}</div>
+                  {/* Existing assignments */}
+                  <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                        All assignments ({assignments.length})
+                      </div>
+                      {uniqueDays.length > 0 && (
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          <button onClick={() => setAssignFilter('all')} style={{ fontFamily: 'inherit', fontSize: '0.72rem', fontWeight: 700, padding: '4px 12px', borderRadius: '100px', border: '1px solid', background: assignFilter === 'all' ? 'var(--blue)' : 'white', color: assignFilter === 'all' ? 'white' : 'var(--text-muted)', borderColor: assignFilter === 'all' ? 'var(--blue)' : 'var(--stone-200)', cursor: 'pointer' }}>All</button>
+                          {uniqueDays.map(d => (
+                            <button key={d} onClick={() => setAssignFilter(d)} style={{ fontFamily: 'inherit', fontSize: '0.72rem', fontWeight: 700, padding: '4px 12px', borderRadius: '100px', border: '1px solid', background: assignFilter === d ? 'var(--blue)' : 'white', color: assignFilter === d ? 'white' : 'var(--text-muted)', borderColor: assignFilter === d ? 'var(--blue)' : 'var(--stone-200)', cursor: 'pointer' }}>Day {d}</button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
-                      {sectionEntries.length === 0
-                        ? <div style={{ fontSize: '0.82rem', color: 'var(--stone-300)', fontStyle: 'italic', padding: '4px 0 10px' }}>No entries yet — add the first one below.</div>
-                        : sectionEntries.map((e, idx) => (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '9px', padding: '10px 12px' }}>
-                            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--blue)', flexShrink: 0, marginTop: '6px', opacity: 0.5 }} />
-                            <div style={{ flex: 1, fontSize: '0.88rem', color: 'var(--stone-900)', lineHeight: 1.55 }}>{e.text}</div>
-                            <button onClick={() => removeEvEntry(activeSection, idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', width: '24px', height: '24px', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--stone-300)', flexShrink: 0 }}>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    {filteredAssignments.length === 0 ? (
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '32px 0' }}>No assignments yet. Add one above.</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {filteredAssignments.map(a => (
+                          <div key={a.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '10px', padding: '12px 14px' }}>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '3px 9px', borderRadius: '100px', background: 'rgba(27,79,216,0.1)', color: 'var(--blue)', flexShrink: 0, marginTop: '2px' }}>Day {a.day_number}</span>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '3px 9px', borderRadius: '100px', background: 'var(--stone-200)', color: 'var(--stone-700)', flexShrink: 0, marginTop: '2px', textTransform: 'capitalize' }}>{a.type}</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--stone-900)' }}>{a.title}</div>
+                              {a.notes && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.5 }}>{a.notes}</div>}
+                            </div>
+                            <button onClick={() => deleteAssignment(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--stone-300)', flexShrink: 0, transition: 'all 0.15s' }}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                             </button>
                           </div>
-                        ))
-                      }
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                      <textarea value={evInput} onChange={e => setEvInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addEvEntry() } }} placeholder="Add an evidence entry for this client…" rows={2} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.88rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', resize: 'none', outline: 'none', minHeight: '42px', lineHeight: 1.5 }} />
-                      <button onClick={addEvEntry} style={{ fontFamily: 'inherit', fontSize: '0.8rem', fontWeight: 700, padding: '10px 16px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                        Add
-                      </button>
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </main>
       </div>
 
-      {/* Save bar */}
-      {dirty && (
+      {/* Save bar — only for details/evidence tabs */}
+      {dirty && (adminTab === 'details' || adminTab === 'evidence') && (
         <div style={{ position: 'fixed', bottom: 0, left: '280px', right: 0, zIndex: 99, background: 'white', borderTop: '1px solid var(--stone-200)', padding: '14px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>You have unsaved changes</div>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -315,7 +452,6 @@ export default function AdminApp() {
         </div>
       )}
 
-      {/* Toast */}
       {toast && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 500, background: toast.type === 'success' ? '#065f46' : toast.type === 'error' ? '#991b1b' : 'var(--stone-900)', color: 'white', fontSize: '0.85rem', fontWeight: 600, padding: '12px 20px', borderRadius: '10px' }}>
           {toast.msg}
