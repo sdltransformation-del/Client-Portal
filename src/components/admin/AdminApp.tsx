@@ -12,13 +12,6 @@ interface EvidenceEntry { id?: string; text: string; saved: boolean }
 interface Assignment {
   id: string; client_id: string; day_number: number; type: string; content_id: string | null; title: string; notes: string | null
 }
-interface CommunityComment {
-  id: string; post_id: string; author_name: string; is_coach: boolean; text: string; created_at: string
-}
-interface CommunityPost {
-  id: string; client_id: string; author_name: string; text: string; created_at: string; post_comments: CommunityComment[]
-}
-
 interface ActivityEntry {
   id: string; client_id: string; type: string; day_number: number | null; content_id: string | null; content_title: string | null; created_at: string
 }
@@ -68,12 +61,6 @@ export default function AdminApp() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
   const [activityLoading, setActivityLoading] = useState(false)
 
-  // Community
-  const [showCommunity, setShowCommunity] = useState(false)
-  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([])
-  const [communityReplies, setCommunityReplies] = useState<Record<string, string>>({})
-  const [communityLoading, setCommunityLoading] = useState(false)
-
   // Modal
   const [showModal, setShowModal] = useState(false)
   const [newName, setNewName] = useState(''); const [newEmail, setNewEmail] = useState(''); const [newDate, setNewDate] = useState('')
@@ -82,30 +69,6 @@ export default function AdminApp() {
   const supabase = createSupabaseClient()
 
   function showToast(msg: string, type = '') { setToast({ msg, type }); setTimeout(() => setToast(null), 3000) }
-
-  async function loadCommunityPosts() {
-    setCommunityLoading(true)
-    const { data } = await supabase.from('posts').select('*, post_comments(*)').order('created_at', { ascending: false })
-    setCommunityPosts(data || [])
-    setCommunityLoading(false)
-  }
-
-  async function submitCommunityReply(postId: string) {
-    const replyText = (communityReplies[postId] || '').trim()
-    if (!replyText) return
-    const { data } = await supabase.from('post_comments').insert({
-      post_id: postId, author_name: 'Serge', is_coach: true, text: replyText
-    }).select()
-    if (data?.[0]) {
-      setCommunityPosts(prev => prev.map(p => p.id === postId ? { ...p, post_comments: [...(p.post_comments || []), data[0]] } : p))
-    }
-    setCommunityReplies(prev => ({ ...prev, [postId]: '' }))
-  }
-
-  async function deleteCommunityPost(postId: string) {
-    await supabase.from('posts').delete().eq('id', postId)
-    setCommunityPosts(prev => prev.filter(p => p.id !== postId))
-  }
 
   function login() {
     if (pwdInput === ADMIN_PASSWORD) { setAuthed(true); loadClients() }
@@ -262,20 +225,16 @@ export default function AdminApp() {
         {/* Sidebar */}
         <aside style={{ background: 'white', borderRight: '1px solid var(--stone-200)', padding: '24px 0', position: 'fixed', left: 0, top: '64px', bottom: 0, width: '280px', overflowY: 'auto' }}>
           <div style={{ padding: '0 16px', marginBottom: '24px' }}>
-            <button onClick={() => setShowModal(true)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 700, background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '10px', padding: '11px 14px', cursor: 'pointer', marginBottom: '8px' }}>
+            <button onClick={() => setShowModal(true)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 700, background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '10px', padding: '11px 14px', cursor: 'pointer', marginBottom: '16px' }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
               New client
-            </button>
-            <button onClick={() => { setShowCommunity(true); setCurrentClient(null); loadCommunityPosts() }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 700, background: showCommunity ? 'var(--blue-pale)' : 'white', color: showCommunity ? 'var(--blue)' : 'var(--stone-700)', border: `1px solid ${showCommunity ? 'rgba(27,79,216,0.2)' : 'var(--stone-200)'}`, borderRadius: '10px', padding: '11px 14px', cursor: 'pointer', marginBottom: '16px' }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              Community
             </button>
             <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px', padding: '0 8px' }}>Clients</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {clients.length === 0
                 ? <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', padding: '8px', textAlign: 'center' }}>No clients yet</div>
                 : clients.map(c => (
-                  <div key={c.id} onClick={() => { setShowCommunity(false); selectClient(c.id) }} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '9px', cursor: 'pointer', transition: 'all 0.15s', border: `1px solid ${currentClient?.id === c.id ? 'rgba(27,79,216,0.2)' : 'transparent'}`, background: currentClient?.id === c.id ? 'var(--blue-pale)' : 'transparent' }}>
+                  <div key={c.id} onClick={() => selectClient(c.id)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '9px', cursor: 'pointer', transition: 'all 0.15s', border: `1px solid ${currentClient?.id === c.id ? 'rgba(27,79,216,0.2)' : 'transparent'}`, background: currentClient?.id === c.id ? 'var(--blue-pale)' : 'transparent' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800, color: 'white', flexShrink: 0 }}>{initials(c.name)}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.85rem', fontWeight: 700, color: currentClient?.id === c.id ? 'var(--blue)' : 'var(--stone-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
@@ -290,70 +249,7 @@ export default function AdminApp() {
 
         {/* Main */}
         <main style={{ marginLeft: '280px', padding: '36px 40px' }}>
-          {showCommunity ? (
-            <div>
-              <div style={{ fontFamily: 'var(--font-instrument)', fontSize: 'clamp(1.6rem,3vw,2.2rem)', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>Community</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '28px' }}>All posts from your clients. Reply as Coach.</div>
-              {communityLoading ? (
-                <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)', padding: '24px 0' }}>Loading…</div>
-              ) : communityPosts.length === 0 ? (
-                <div style={{ background: 'white', border: '1px solid var(--stone-200)', borderRadius: '16px', padding: '48px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>No posts yet.</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {communityPosts.map(post => (
-                    <div key={post.id} style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', overflow: 'hidden' }}>
-                      <div style={{ padding: '16px 20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--blue)', color: 'white', fontSize: '0.68rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              {post.author_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
-                            </div>
-                            <div>
-                              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--stone-900)' }}>{post.author_name}</div>
-                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{timeAgo(post.created_at)}</div>
-                            </div>
-                          </div>
-                          <button onClick={() => deleteCommunityPost(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--stone-300)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '6px' }}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                          </button>
-                        </div>
-                        <div style={{ fontSize: '0.92rem', color: 'var(--stone-900)', lineHeight: 1.7 }}>{post.text}</div>
-                      </div>
-                      <div style={{ borderTop: '1px solid rgba(27,79,216,0.07)' }}>
-                        {[...(post.post_comments || [])].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map(c => (
-                          <div key={c.id} style={{ padding: '10px 20px', borderBottom: '1px solid rgba(27,79,216,0.05)', display: 'flex', gap: '10px' }}>
-                            <div style={{ width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0, background: c.is_coach ? 'var(--navy)' : 'var(--blue)', color: 'white', fontSize: '0.6rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {c.is_coach ? 'S' : c.author_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--stone-900)', marginBottom: '2px' }}>
-                                {c.is_coach ? 'Serge' : c.author_name}
-                                {c.is_coach && <span style={{ display: 'inline-block', fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', background: 'var(--navy)', color: 'white', padding: '1px 5px', borderRadius: '100px', marginLeft: '5px', verticalAlign: 'middle' }}>Coach</span>}
-                                <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.68rem', marginLeft: '6px' }}>{timeAgo(c.created_at)}</span>
-                              </div>
-                              <div style={{ fontSize: '0.84rem', color: 'var(--stone-700)', lineHeight: 1.6 }}>{c.text}</div>
-                            </div>
-                          </div>
-                        ))}
-                        <div style={{ padding: '10px 20px 14px', display: 'flex', gap: '9px', alignItems: 'flex-start' }}>
-                          <div style={{ width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0, background: 'var(--navy)', color: 'white', fontSize: '0.6rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '2px' }}>S</div>
-                          <textarea
-                            value={communityReplies[post.id] || ''}
-                            onChange={e => setCommunityReplies(prev => ({ ...prev, [post.id]: e.target.value }))}
-                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitCommunityReply(post.id) } }}
-                            placeholder="Reply as Serge…"
-                            rows={1}
-                            style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.84rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '8px 12px', resize: 'none', outline: 'none', lineHeight: 1.5 }}
-                          />
-                          <button onClick={() => submitCommunityReply(post.id)} style={{ fontFamily: 'inherit', fontSize: '0.75rem', fontWeight: 700, padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--navy)', color: 'white', cursor: 'pointer', flexShrink: 0, marginTop: '2px' }}>Reply</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : !currentClient ? (
+          {!currentClient ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center', color: 'var(--text-muted)' }}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ opacity: 0.2, marginBottom: '16px' }}>
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -419,8 +315,8 @@ export default function AdminApp() {
                       <label style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Daily exercises</label>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {[
-                          { val: 'both', label: 'Journaling + Somatic Tracking', desc: 'Alternates every day — journal one day, somatic tracking the next' },
-                          { val: 'somatic_only', label: 'Somatic Tracking only', desc: 'Somatic tracking every day, no journaling' },
+                          { val: 'both', label: 'Journaling + Somatic + Visualization', desc: 'Cycles every 3 days — journal, somatic tracking, then visualization' },
+                          { val: 'somatic_only', label: 'Somatic + Visualization', desc: 'Alternates every 2 days — somatic tracking, then visualization' },
                           { val: 'none', label: 'None', desc: 'No daily exercise shown' },
                         ].map(opt => (
                           <label key={opt.val} onClick={() => { setEditExerciseMode(opt.val); setDirty(true) }} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 14px', borderRadius: '10px', border: `1.5px solid ${editExerciseMode === opt.val ? 'var(--blue)' : 'var(--stone-200)'}`, background: editExerciseMode === opt.val ? 'var(--blue-pale)' : 'var(--stone-50)', cursor: 'pointer', transition: 'all 0.15s' }}>

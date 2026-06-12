@@ -183,18 +183,28 @@ export default function TodayTab({ client }: Props) {
       {!weekend && (() => {
         const mode = client.exercise_mode || 'both'
         if (mode === 'none') return null
-        const showJournal = mode === 'both' && currentDay % 2 === 1
-        const showSomatic = mode === 'somatic_only' || (mode === 'both' && currentDay % 2 === 0)
+
+        const cycle3 = ((currentDay - 1) % 3) + 1
+        const cycle2 = currentDay % 2
+
+        const showJournal = mode === 'both' && cycle3 === 1
+        const showSomatic = (mode === 'somatic_only' && cycle2 === 1) || (mode === 'both' && cycle3 === 2)
+        const showVisualization = (mode === 'somatic_only' && cycle2 === 0) || (mode === 'both' && cycle3 === 0)
+
+        const exerciseLabel = showJournal ? 'Journaling' : showSomatic ? 'Somatic tracking' : 'Visualization'
 
         return (
           <div style={{ marginTop: '20px' }}>
             <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>
-              Today's exercise{mode === 'both' ? ` · ${showJournal ? 'Journaling day' : 'Somatic tracking day'}` : ''}
+              Today's exercise · {exerciseLabel}
             </div>
 
             {showJournal && (
               <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px 26px' }}>
-                <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '6px' }}>Journaling</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Journaling</div>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(27,79,216,0.08)', color: 'var(--blue)' }}>5–10 min</span>
+                </div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Write in your Recovery Journal</div>
                 <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7, marginBottom: '18px' }}>
                   Take 5 to 10 minutes to write. It doesn't have to be structured. Write about something that strengthened your conviction today, a doubt you worked through, a feeling you let yourself feel, or a movement you made without fear. Anything that happened, small or large.
@@ -219,6 +229,25 @@ export default function TodayTab({ client }: Props) {
                   Now focus on the sensation itself. Breathe into it. Give it a little air, a little space. When a sensation is unpleasant, the instinct is to distract yourself or look away. Do the opposite. Just watch it. Notice it. You are not trying to get rid of it, not trying to change it, not trying to do anything at all. You are simply getting to know it. As you breathe and attend to it, just gather information. Is it pleasant or unpleasant? Widespread or localized? Is it a tightness, a warmth, a pulsing, a tingling? One answer is not better than another. You are just noticing. You are just paying attention.
                   <br /><br />
                   This sensation is completely safe. It is not dangerous. Your brain is generating it, and right now you are learning to observe it without fear, without judgment, without any goal beyond watching. As you pay attention this way, you are sending your brain a message that this sensation is safe. You are building the neural pathways to feel it without panic. Just be curious. Notice what happens as you attend to it. Does it intensify? Does it shift? Does it stay exactly the same? Whatever it does is fine. You are outcome independent. You are just watching the show. Think of it like lying back in a field watching clouds pass, just noticing the shapes they make, not needing them to be anything different.
+                </div>
+              </div>
+            )}
+
+            {showVisualization && (
+              <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px 26px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Visualization</div>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(27,79,216,0.08)', color: 'var(--blue)' }}>5–10 min</span>
+                </div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Visualizing your pain free self</div>
+                <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7 }}>
+                  Do this one in bed, just before you fall asleep. Let your body settle into the mattress, close your eyes, and take three slow deep breaths. You are not trying to force anything. You are simply creating space before you drift off.
+                  <br /><br />
+                  Now bring to mind an image of yourself completely free of pain. Not a future version of yourself. This version, now, living a normal day without the weight of the symptom. See yourself moving freely. Maybe you are walking without thinking about it, bending down to pick something up, sitting comfortably through a meal. If you are an athlete, see yourself performing at full capacity. Feel the movement, the effort, the ease of a body doing exactly what it was built to do, without hesitation, without fear, without any part of your attention going to the symptom. Let the scene be specific to your life. Choose a moment that matters to you.
+                  <br /><br />
+                  Hold that image gently. Notice how that version of you carries themselves. Notice the absence of fear in their body, the absence of bracing, the absence of scanning for the next flare. When you hold this image with enough clarity and enough emotional truth, you are sending your nervous system a real signal. You are showing your brain that this is a possible state. You are making it more familiar.
+                  <br /><br />
+                  Stay with this image as you fall asleep. If doubt arises, let it pass like a thought and return to the image. The goal is not to convince yourself of anything. The goal is simply to let your nervous system spend the last moments of your day in a calm, pain free state.
                 </div>
               </div>
             )}

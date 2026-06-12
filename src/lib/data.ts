@@ -1,12 +1,54 @@
 export const SECTIONS = [
   { id: 's1', title: 'My symptoms', desc: 'Every pain, physical symptom, or health complaint, past or present. Include things that seem unrelated: headaches, digestive issues, skin conditions, fatigue, anxiety. Don\'t filter.' },
   { id: 's2', title: 'Medical history', desc: 'Every test, scan, or evaluation you\'ve had, and what it showed. MRIs, X-rays, blood tests, specialist consultations. Most people find a pattern of normal results or findings that never fully explained the pain.' },
-  { id: 's3', title: 'Functional evidence', desc: 'Symptoms that exist without sufficient structural disease to explain them. Every item here is evidence the structural story is incomplete.' },
-  { id: 's4', title: 'Inconsistent evidence', desc: 'Every way your pain behaves in ways a structural injury simply would not. A structural injury is consistent. PDP is not, and that inconsistency is evidence.' },
-  { id: 's5', title: 'Triggered evidence', desc: 'Specific situations, emotions, people, or environments that reliably activate your symptoms. This section alone is often the most convincing evidence of all.' },
-  { id: 's6', title: 'My personality profile', desc: 'How strongly the PDP personality traits show up in you. Write honestly. This isn\'t a criticism, it\'s a clue. Perfectionism, goodism, self-criticism, inability to rest, the compulsion to be the dependable one.' },
+  { id: 's3', title: 'Functional evidence', desc: 'Symptoms that do not fit with, and cannot be explained by, a structural condition in your body. Check every item that applies to you. Each one is evidence.' },
+  { id: 's4', title: 'Inconsistent evidence', desc: 'Ways your symptoms vary that a structural injury simply would not. A structural problem is consistent. Pain that changes based on mood, context, or attention is not structural.' },
+  { id: 's5', title: 'Triggered evidence', desc: 'Symptoms brought on by things that would not physically cause them. This section alone is often the most convincing evidence.' },
+  { id: 's6', title: 'My personality profile', desc: 'Research shows a strong link between these personality traits and the development of neuroplastic pain. Check every one that applies to you. This is not a criticism — it is a clue.' },
   { id: 's7', title: 'My life & my pain', desc: 'The story of your pain. When did it start? What was happening emotionally, relationally, professionally at that exact time? The story of your pain and the story of your life will rhyme, and that rhyme is your evidence.' },
 ]
+
+export const FIT_ITEMS: Record<string, string[]> = {
+  s3: [
+    'My symptoms began without any physical injury or clear physical cause, often upon waking or during a period of stress',
+    'My symptoms have persisted long after an injury that should have healed (all injuries heal within 3 months)',
+    'My symptoms are symmetric, appearing as a mirror image on both the left and right side of my body',
+    'My symptoms affect one whole side of my body, or half of my face, head, or torso',
+    'My symptoms have spread over time to different areas of my body',
+    'My symptoms radiate down a whole leg or arm, rather than following a specific nerve pathway',
+    'My symptoms occur in many different body parts at the same time',
+    'My symptoms have a quality of tingling, electric, burning, numbness, or hot and cold sensations without evidence of actual nerve damage',
+    'My symptoms are occurring in an area of a prior injury that has since healed',
+  ],
+  s4: [
+    'My symptoms shift location within hours, days, or weeks',
+    'My symptoms are more or less intense depending on the time of day, or wake me at night',
+    'My symptoms occur after activity, but not during it',
+    'My symptoms appear when I think about them, or when someone asks me about them',
+    'My symptoms worsen when I am stressed or thinking about stressful situations',
+    'My symptoms are minimal or gone when I am distracted, engaged in something I enjoy, or on vacation',
+    'My symptoms temporarily improved with treatments like massage, chiropractic, acupuncture, or supplements',
+  ],
+  s5: [
+    'My symptoms are triggered by things unrelated to the actual symptom: foods, smells, sounds, light, screens, weather, or specific movements',
+    'My symptoms are triggered by the anticipation of stress, such as before work, a medical appointment, or a social event',
+    'My symptoms appear just from imagining or thinking about a triggering activity, without actually doing it',
+    'My symptoms are triggered by light touch, wind, or cold temperatures that would not physically affect the area in pain',
+  ],
+}
+
+export const PERSONALITY_ITEMS = [
+  'I put a lot of pressure on myself — to perform, to be enough, to not fall short',
+  'I have perfectionistic tendencies — things need to be done right, and I often feel like I fall short of my own standards',
+  'I am more self-critical and self-blaming than most people would be in the same situation',
+  'I feel a strong sense of obligation — to others, to responsibilities, to things I feel I should be doing',
+  'I have a strong sense of duty — once I commit to something, I feel I have to follow through regardless of the cost to myself',
+  'I worry excessively — about outcomes, about what could go wrong, about things outside my control',
+  'I take responsibility for problems that are not mine to solve — I feel responsible for how others feel or what happens around me',
+  'I am overly conscientious and caring about others, often at the expense of my own needs',
+]
+
+export const FIT_SECTION_IDS = new Set(['s3', 's4', 's5', 's6'])
 
 export const REMINDERS = [
   'My pain is not caused by structural damage in my body. It is being generated by my brain as a learned response.',

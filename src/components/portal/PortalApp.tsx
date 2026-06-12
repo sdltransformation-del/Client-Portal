@@ -7,10 +7,9 @@ import TodayTab from './TodayTab'
 import LibraryTab from './LibraryTab'
 import ResourcesTab from './ResourcesTab'
 import EvidenceTab from './EvidenceTab'
-import CommunityTab from './CommunityTab'
 import NotesTab from './NotesTab'
 
-type Tab = 'today' | 'library' | 'resources' | 'evidence' | 'community' | 'notes'
+type Tab = 'today' | 'library' | 'resources' | 'evidence' | 'notes'
 
 interface Props {
   client: {
@@ -35,7 +34,6 @@ export default function PortalApp({ client, adminEvidence, userEmail }: Props) {
 
   const initials = client.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
   const firstName = client.name.split(' ')[0]
-  const day = client.day_number || 1
 
   useEffect(() => {
     supabase.from('activity_log').insert({ client_id: client.id, type: 'login' })
@@ -52,7 +50,6 @@ export default function PortalApp({ client, adminEvidence, userEmail }: Props) {
     { id: 'library', label: 'Video Library' },
     { id: 'resources', label: 'Resources' },
     { id: 'evidence', label: 'My Evidence' },
-    { id: 'community', label: 'Community' },
     { id: 'notes', label: 'Recovery Journal' },
   ]
 
@@ -111,7 +108,6 @@ export default function PortalApp({ client, adminEvidence, userEmail }: Props) {
         {tab === 'library'   && <LibraryTab />}
         {tab === 'resources' && <ResourcesTab />}
         {tab === 'evidence'  && <EvidenceTab clientId={client.id} adminEvidence={adminEvidence} />}
-        {tab === 'community' && <CommunityTab client={client} />}
         {tab === 'notes'     && <NotesTab client={client} />}
       </div>
 
