@@ -203,11 +203,15 @@ export default function TodayTab({ client }: Props) {
               <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px 26px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Journaling</div>
-                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(27,79,216,0.08)', color: 'var(--blue)' }}>5–10 min</span>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(27,79,216,0.08)', color: 'var(--blue)' }}>20 min</span>
                 </div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Write in your Recovery Journal</div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>JournalSpeak</div>
                 <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7, marginBottom: '18px' }}>
-                  Take 5 to 10 minutes to write. It doesn't have to be structured. Write about something that strengthened your conviction today, a doubt you worked through, a feeling you let yourself feel, or a movement you made without fear. Anything that happened, small or large.
+                  Start by making three lists if you haven't already: <strong>past stressors</strong> (anything from childhood to now that caused fear, anger, guilt, shame, or hurt — neglect, loss, difficult relationships, career stress, anything that meant something to you even if no one else would understand it), <strong>current stressors</strong> (every person, situation, or worry that's weighing on you right now — family, money, relationships, your pain and what it has taken from you), and <strong>personality traits</strong> that add to your stress (perfectionism, people pleasing, a harsh inner critic, difficulty expressing emotions, putting everyone else first).
+                  <br /><br />
+                  Then pick one item from any of those lists and write about it for 20 minutes. Don't overthink where to start — just pick one and go. If you go off on a tangent, follow it. The point is to write the raw, unfiltered truth about how you feel. Don't censor yourself. Don't edit. Write what's shameful, scary, or ugly. Nobody else will read this — delete it after if you want to. Think of it as word vomit: you are getting hidden, unfelt feelings out of your body and onto the page, where they can't keep generating a pain signal.
+                  <br /><br />
+                  As you write, stay aware of what you're feeling. Notice what comes up in your body. Let the emotions surface. If nothing comes right away, that's fine — stay with it. The more you do this, the more your brain learns that it is safe to feel these things. That is how you get out of pain.
                 </div>
                 <a href="#" onClick={e => { e.preventDefault(); const el = document.querySelector('[data-tab="notes"]') as HTMLElement; el?.click() }} style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'var(--blue)', color: 'white', padding: '10px 20px', borderRadius: '10px', fontSize: '0.84rem', fontWeight: 700, textDecoration: 'none' }}>
                   Open Recovery Journal
