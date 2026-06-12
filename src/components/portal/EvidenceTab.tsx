@@ -158,14 +158,47 @@ export default function EvidenceTab({ clientId, adminEvidence }: Props) {
         </div>
       </div>
 
-      {/* Bottom 3 columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+      {/* Personality — full width */}
+      <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '28px', marginBottom: '20px' }}>
+        <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.3rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>My personality</div>
+        <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.65, marginBottom: '20px' }}>Research shows a strong link between these traits and neuroplastic pain. Check every one that resonates.</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+          {PERSONALITY_ITEMS.map((text, i) => {
+            const checked = personality.includes(text)
+            return (
+              <div
+                key={i}
+                onClick={() => togglePersonality(text)}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 12px',
+                  borderRadius: '10px', border: `1.5px solid ${checked ? 'rgba(27,79,216,0.25)' : 'rgba(27,79,216,0.08)'}`,
+                  background: checked ? 'rgba(27,79,216,0.04)' : 'var(--stone-50)',
+                  cursor: 'pointer', transition: 'all 0.18s', userSelect: 'none'
+                }}
+              >
+                <div style={{
+                  width: '18px', height: '18px', borderRadius: '5px', flexShrink: 0, marginTop: '2px',
+                  border: `2px solid ${checked ? 'var(--blue)' : 'rgba(27,79,216,0.2)'}`,
+                  background: checked ? 'var(--blue)' : 'white',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.18s'
+                }}>
+                  {checked && <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3.5 3.5 5.5-7" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                </div>
+                <div style={{ fontSize: '0.82rem', color: checked ? 'var(--stone-900)' : 'var(--stone-600)', lineHeight: 1.5, fontWeight: checked ? 500 : 400, transition: 'color 0.18s' }}>{text}</div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Symptoms & history + My life & my pain — 2 columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
 
         {/* Symptoms & history */}
-        <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
-            <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.1rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>Symptoms & history</div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>Every symptom, scan, and diagnosis — past and present. Include things that seem unrelated.</div>
+            <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.3rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>Symptoms & history</div>
+            <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.65 }}>Every symptom, scan, and diagnosis — past and present. Include things that seem unrelated.</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
             {history.length === 0
@@ -182,56 +215,16 @@ export default function EvidenceTab({ clientId, adminEvidence }: Props) {
             }
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-            <textarea
-              value={historyInput}
-              onChange={e => setHistoryInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addHistory() } }}
-              placeholder="Add a symptom or finding…"
-              rows={2}
-              style={{ flex: 1, fontFamily: 'inherit', background: 'white', border: '1px solid rgba(27,79,216,0.15)', borderRadius: '8px', padding: '9px 11px', fontSize: '0.84rem', color: 'var(--stone-900)', outline: 'none', resize: 'none', lineHeight: 1.5 }}
-            />
+            <textarea value={historyInput} onChange={e => setHistoryInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addHistory() } }} placeholder="Add a symptom or finding…" rows={2} style={{ flex: 1, fontFamily: 'inherit', background: 'white', border: '1px solid rgba(27,79,216,0.15)', borderRadius: '8px', padding: '9px 11px', fontSize: '0.84rem', color: 'var(--stone-900)', outline: 'none', resize: 'none', lineHeight: 1.5 }} />
             <button onClick={addHistory} style={{ padding: '9px 14px', background: 'var(--blue)', color: 'white', fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, border: 'none', borderRadius: '8px', cursor: 'pointer', flexShrink: 0 }}>Add</button>
           </div>
         </div>
 
-        {/* Personality */}
-        <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '22px' }}>
-          <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.1rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>My personality</div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px' }}>Research shows a strong link between these traits and neuroplastic pain. Check every one that resonates.</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {PERSONALITY_ITEMS.map((text, i) => {
-              const checked = personality.includes(text)
-              return (
-                <div
-                  key={i}
-                  onClick={() => togglePersonality(text)}
-                  style={{
-                    display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '9px 11px',
-                    borderRadius: '9px', border: `1.5px solid ${checked ? 'rgba(27,79,216,0.25)' : 'rgba(27,79,216,0.08)'}`,
-                    background: checked ? 'rgba(27,79,216,0.04)' : 'var(--stone-50)',
-                    cursor: 'pointer', transition: 'all 0.18s', userSelect: 'none'
-                  }}
-                >
-                  <div style={{
-                    width: '16px', height: '16px', borderRadius: '4px', flexShrink: 0, marginTop: '2px',
-                    border: `2px solid ${checked ? 'var(--blue)' : 'rgba(27,79,216,0.2)'}`,
-                    background: checked ? 'var(--blue)' : 'white',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.18s'
-                  }}>
-                    {checked && <svg width="9" height="9" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3.5 3.5 5.5-7" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                  </div>
-                  <div style={{ fontSize: '0.82rem', color: checked ? 'var(--stone-900)' : 'var(--stone-600)', lineHeight: 1.5, fontWeight: checked ? 500 : 400, transition: 'color 0.18s' }}>{text}</div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
         {/* My life & my pain */}
-        <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
-            <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.1rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>My life & my pain</div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>When did it start? What was happening emotionally and in your life at that exact time? The story of your pain and the story of your life will rhyme.</div>
+            <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.3rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>My life & my pain</div>
+            <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.65 }}>When did it start? What was happening emotionally and in your life at that exact time? The story of your pain and the story of your life will rhyme.</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
             {story.length === 0
@@ -248,14 +241,7 @@ export default function EvidenceTab({ clientId, adminEvidence }: Props) {
             }
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-            <textarea
-              value={storyInput}
-              onChange={e => setStoryInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addStory() } }}
-              placeholder="Write freely…"
-              rows={3}
-              style={{ flex: 1, fontFamily: 'inherit', background: 'white', border: '1px solid rgba(27,79,216,0.15)', borderRadius: '8px', padding: '9px 11px', fontSize: '0.84rem', color: 'var(--stone-900)', outline: 'none', resize: 'none', lineHeight: 1.5 }}
-            />
+            <textarea value={storyInput} onChange={e => setStoryInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addStory() } }} placeholder="Write freely…" rows={3} style={{ flex: 1, fontFamily: 'inherit', background: 'white', border: '1px solid rgba(27,79,216,0.15)', borderRadius: '8px', padding: '9px 11px', fontSize: '0.84rem', color: 'var(--stone-900)', outline: 'none', resize: 'none', lineHeight: 1.5 }} />
             <button onClick={addStory} style={{ padding: '9px 14px', background: 'var(--blue)', color: 'white', fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, border: 'none', borderRadius: '8px', cursor: 'pointer', flexShrink: 0 }}>Add</button>
           </div>
         </div>
