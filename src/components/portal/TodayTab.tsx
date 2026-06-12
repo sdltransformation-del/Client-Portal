@@ -236,7 +236,7 @@ export default function TodayTab({ client }: Props) {
                   <br /><br />
                   Then pick one item from any of those lists and write about it for 20 minutes. Do not overthink where to start. Just pick one and go. If you go off on a tangent, follow it. The point is to write the raw, unfiltered truth about how you feel. Do not censor yourself. Do not edit. Write what is shameful, scary, or ugly. Nobody else will read this. Destroy it after if you want to. Think of it as word vomit: you are getting hidden, unfelt feelings out of your body and onto the page, where they cannot keep generating a pain signal.
                   <br /><br />
-                  As you write, stay aware of what you are feeling. Notice what comes up in your body. Let the emotions surface. If nothing comes right away, that is fine. Stay with it. The more you do this, the more your brain learns that it is safe to feel these things. That is how you get out of pain.
+                  As you write, stay aware of what you are feeling. Notice what comes up in your body. Let the emotions surface. If nothing comes right away, that is fine. Stay with it. The more you do this, the more your brain learns that it is safe to feel these things.
                 </div>
               </div>
             )}
