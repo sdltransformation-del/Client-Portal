@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { VIDEOS, RESOURCES } from '@/lib/data'
 import { CURRICULUM } from '@/lib/curriculum'
 
@@ -48,6 +49,7 @@ function formatMin(min: number): string {
 }
 
 export default function TodayTab({ client }: Props) {
+  const supabase = createClient()
   const currentDay = getCurrentDay(client.start_date)
   const [viewDay, setViewDay] = useState(currentDay)
   const [videoModal, setVideoModal] = useState<{ ytId: string; title: string; meta: string; startSec: number } | null>(null)
@@ -66,6 +68,12 @@ export default function TodayTab({ client }: Props) {
     if (!video || !entry) return
     const startSec = (entry.part?.startMin ?? 0) * 60
     setVideoModal({ ytId: entry.refId, title: video.title, meta: video.meta, startSec })
+    supabase.from('activity_log').insert({ client_id: client.id, type: 'video', day_number: viewDay, content_id: entry.refId, content_title: video.title })
+  }
+
+  function logArticle() {
+    if (!article || !entry) return
+    supabase.from('activity_log').insert({ client_id: client.id, type: 'article', day_number: viewDay, content_id: entry.refId, content_title: article.title })
   }
 
   return (
@@ -162,7 +170,7 @@ export default function TodayTab({ client }: Props) {
             </div>
           )}
           {article.url && (
-            <a href={article.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'var(--blue)', color: 'white', padding: '10px 20px', borderRadius: '10px', fontSize: '0.84rem', fontWeight: 700, textDecoration: 'none' }}>
+            <a href={article.url} target="_blank" rel="noopener noreferrer" onClick={logArticle} style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'var(--blue)', color: 'white', padding: '10px 20px', borderRadius: '10px', fontSize: '0.84rem', fontWeight: 700, textDecoration: 'none' }}>
               Read
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </a>

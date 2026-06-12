@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { SECTIONS, VIDEOS, RESOURCES } from '@/lib/data'
 
@@ -19,7 +19,14 @@ interface CommunityPost {
   id: string; client_id: string; author_name: string; text: string; created_at: string; post_comments: CommunityComment[]
 }
 
-type AdminTab = 'details' | 'evidence' | 'assignments'
+interface ActivityEntry {
+  id: string; client_id: string; type: string; day_number: number | null; content_id: string | null; content_title: string | null; created_at: string
+}
+interface JournalEntry {
+  id: string; client_id: string; text: string; created_at: string
+}
+
+type AdminTab = 'details' | 'evidence' | 'assignments' | 'activity'
 
 function timeAgo(iso: string) {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000
@@ -55,6 +62,11 @@ export default function AdminApp() {
   const [newAssignTitle, setNewAssignTitle] = useState('')
   const [newAssignNotes, setNewAssignNotes] = useState('')
   const [assignFilter, setAssignFilter] = useState<number | 'all'>('all')
+
+  // Activity & journal
+  const [activityLog, setActivityLog] = useState<ActivityEntry[]>([])
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
+  const [activityLoading, setActivityLoading] = useState(false)
 
   // Community
   const [showCommunity, setShowCommunity] = useState(false)
@@ -106,10 +118,12 @@ export default function AdminApp() {
   }
 
   async function selectClient(id: string) {
-    const [{ data: clientData }, { data: evData }, { data: assignData }] = await Promise.all([
+    const [{ data: clientData }, { data: evData }, { data: assignData }, { data: actData }, { data: journalData }] = await Promise.all([
       supabase.from('clients').select('*').eq('id', id).limit(1),
       supabase.from('evidence').select('*').eq('client_id', id).order('created_at', { ascending: true }),
-      supabase.from('assignments').select('*').eq('client_id', id).order('day_number', { ascending: true })
+      supabase.from('assignments').select('*').eq('client_id', id).order('day_number', { ascending: true }),
+      supabase.from('activity_log').select('*').eq('client_id', id).order('created_at', { ascending: false }),
+      supabase.from('journal_entries').select('*').eq('client_id', id).order('created_at', { ascending: false })
     ])
     const c = clientData?.[0]; if (!c) return
     setCurrentClient(c)
@@ -119,6 +133,8 @@ export default function AdminApp() {
     for (const e of evData || []) { if (pe[e.section]) pe[e.section].push({ id: e.id, text: e.content, saved: true }) }
     setPendingEvidence(pe)
     setAssignments(assignData || [])
+    setActivityLog(actData || [])
+    setJournalEntries(journalData || [])
     setDirty(false); setEvInput(''); setAdminTab('details'); loadClients()
   }
 
@@ -361,9 +377,9 @@ export default function AdminApp() {
 
               {/* Inner tabs */}
               <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'white', border: '1px solid var(--stone-200)', borderRadius: '12px', padding: '4px' }}>
-                {(['details', 'evidence', 'assignments'] as AdminTab[]).map(t => (
+                {(['details', 'evidence', 'assignments', 'activity'] as AdminTab[]).map(t => (
                   <button key={t} onClick={() => setAdminTab(t)} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 700, padding: '9px 16px', borderRadius: '9px', border: 'none', background: adminTab === t ? 'var(--blue)' : 'none', color: adminTab === t ? 'white' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize' }}>
-                    {t}{t === 'assignments' ? ` (${assignments.length})` : ''}
+                    {t === 'activity' ? 'Activity' : t}{t === 'assignments' ? ` (${assignments.length})` : ''}
                   </button>
                 ))}
               </div>
@@ -510,6 +526,56 @@ export default function AdminApp() {
                             <button onClick={() => deleteAssignment(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--stone-300)', flexShrink: 0, transition: 'all 0.15s' }}>
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                             </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ── ACTIVITY TAB ── */}
+              {adminTab === 'activity' && (
+                <div>
+                  {/* Activity log */}
+                  <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '18px' }}>Activity log</div>
+                    {activityLog.length === 0 ? (
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '16px 0' }}>No activity recorded yet.</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                        {activityLog.map((a, i) => (
+                          <div key={a.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '12px 0', borderBottom: i < activityLog.length - 1 ? '1px solid var(--stone-100)' : 'none' }}>
+                            <div style={{ width: '32px', height: '32px', flexShrink: 0, borderRadius: '8px', background: a.type === 'login' ? '#EEF2FC' : a.type === 'video' ? '#E1F5EE' : '#FAEEDA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {a.type === 'login' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B4FD8" strokeWidth="2" strokeLinecap="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>}
+                              {a.type === 'video' && <svg width="14" height="14" viewBox="0 0 24 24" fill="#0F6E56"><path d="M8 5v14l11-7z"/></svg>}
+                              {a.type === 'article' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#854F0B" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--stone-900)' }}>
+                                {a.type === 'login' ? 'Logged in' : a.type === 'video' ? `Watched video` : 'Read article'}
+                                {a.day_number && <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: '6px' }}>· Day {a.day_number}</span>}
+                              </div>
+                              {a.content_title && <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{a.content_title}</div>}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', flexShrink: 0, marginTop: '2px' }}>{timeAgo(a.created_at)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Journal entries */}
+                  <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '18px' }}>Recovery journal ({journalEntries.length})</div>
+                    {journalEntries.length === 0 ? (
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '16px 0' }}>No journal entries yet.</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {journalEntries.map(j => (
+                          <div key={j.id} style={{ borderLeft: '3px solid rgba(27,79,216,0.15)', paddingLeft: '16px' }}>
+                            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>{new Date(j.created_at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                            <div style={{ fontSize: '0.88rem', color: 'var(--stone-900)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{j.text}</div>
                           </div>
                         ))}
                       </div>

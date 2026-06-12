@@ -35,6 +35,10 @@ export default function PortalApp({ client, adminEvidence, userEmail }: Props) {
   const firstName = client.name.split(' ')[0]
   const day = client.day_number || 1
 
+  useEffect(() => {
+    supabase.from('activity_log').insert({ client_id: client.id, type: 'login' })
+  }, [])
+
   async function signOut() {
     await supabase.auth.signOut()
     router.push('/login')
@@ -106,7 +110,7 @@ export default function PortalApp({ client, adminEvidence, userEmail }: Props) {
         {tab === 'resources' && <ResourcesTab />}
         {tab === 'evidence'  && <EvidenceTab clientId={client.id} adminEvidence={adminEvidence} />}
         {tab === 'community' && <CommunityTab client={client} />}
-        {tab === 'notes'     && <NotesTab />}
+        {tab === 'notes'     && <NotesTab client={client} />}
       </div>
 
       {/* Footer */}
