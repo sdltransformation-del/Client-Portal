@@ -2,16 +2,19 @@
 import { useState } from 'react'
 import { REMINDERS } from '@/lib/data'
 
-export default function RemindersOverlay({ onEnter }: { onEnter: () => void }) {
-  const [checked, setChecked] = useState<boolean[]>(new Array(REMINDERS.length).fill(false))
+const EMOTIONS_REMINDER = 'My emotions matter. Unprocessed stress, repressed anger, and accumulated pressure are directly connected to my symptoms.'
+
+export default function RemindersOverlay({ onEnter, unlearnPainOnly }: { onEnter: () => void; unlearnPainOnly?: boolean }) {
+  const reminders = unlearnPainOnly ? REMINDERS.filter(r => r !== EMOTIONS_REMINDER) : REMINDERS
+  const [checked, setChecked] = useState<boolean[]>(new Array(reminders.length).fill(false))
 
   function toggle(i: number) {
     setChecked(prev => { const n = [...prev]; n[i] = !n[i]; return n })
   }
 
   const count = checked.filter(Boolean).length
-  const ready = count === REMINDERS.length
-  const pct = Math.round((count / REMINDERS.length) * 100)
+  const ready = count === reminders.length
+  const pct = Math.round((count / reminders.length) * 100)
 
   return (
     <div style={{
@@ -36,7 +39,7 @@ export default function RemindersOverlay({ onEnter }: { onEnter: () => void }) {
         {/* Progress */}
         <div style={{ marginBottom: '14px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.35)', marginBottom: '8px' }}>
-            <span>{count} of {REMINDERS.length} confirmed</span>
+            <span>{count} of {reminders.length} confirmed</span>
             <span>{pct}%</span>
           </div>
           <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px' }}>
@@ -46,7 +49,7 @@ export default function RemindersOverlay({ onEnter }: { onEnter: () => void }) {
 
         {/* Items */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-          {REMINDERS.map((text, i) => (
+          {reminders.map((text, i) => (
             <div
               key={i}
               onClick={() => toggle(i)}
@@ -86,7 +89,7 @@ export default function RemindersOverlay({ onEnter }: { onEnter: () => void }) {
             opacity: ready ? 1 : 0.4, transition: 'all 0.2s'
           }}
         >
-          {ready ? 'I have read and accepted all of these, enter' : `${count} of ${REMINDERS.length} confirmed, check all to continue`}
+          {ready ? 'I have read and accepted all of these, enter' : `${count} of ${reminders.length} confirmed, check all to continue`}
         </button>
       </div>
     </div>

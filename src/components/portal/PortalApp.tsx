@@ -21,6 +21,7 @@ interface Props {
     day_number: number | null
     notes: string | null
     exercise_mode: string | null
+    unlearn_pain_only: boolean | null
   }
   adminEvidence: Record<string, string[]>
   userEmail: string
@@ -57,7 +58,7 @@ export default function PortalApp({ client, adminEvidence, userEmail }: Props) {
 
   return (
     <div style={{ background: 'var(--blue-pale)', minHeight: '100vh' }}>
-      {!reminderDone && <RemindersOverlay onEnter={() => setReminderDone(true)} />}
+      {!reminderDone && <RemindersOverlay onEnter={() => setReminderDone(true)} unlearnPainOnly={client.unlearn_pain_only ?? false} />}
 
       {/* Topbar */}
       <nav style={{
