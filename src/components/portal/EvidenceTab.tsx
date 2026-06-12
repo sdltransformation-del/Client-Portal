@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { EVIDENCE_CHECKLIST_ITEMS, PERSONALITY_ITEMS } from '@/lib/data'
 import { createClient } from '@/lib/supabase/client'
 
@@ -10,10 +10,24 @@ interface Props {
 
 export default function EvidenceTab({ clientId, adminEvidence }: Props) {
   const [items, setItems] = useState<Record<string, string[]>>(adminEvidence)
+  const [loaded, setLoaded] = useState(false)
   const [historyInput, setHistoryInput] = useState('')
   const [storyInput, setStoryInput] = useState('')
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
+
+  useEffect(() => {
+    supabase.from('evidence').select('*').eq('client_id', clientId).order('created_at', { ascending: true }).then(({ data }) => {
+      if (!data) return
+      const merged: Record<string, string[]> = {}
+      for (const e of data) {
+        if (!merged[e.section]) merged[e.section] = []
+        if (!merged[e.section].includes(e.content)) merged[e.section].push(e.content)
+      }
+      setItems(merged)
+      setLoaded(true)
+    })
+  }, [clientId])
 
   const checklist = items['checklist'] || []
   const history = items['history'] || []
@@ -191,8 +205,8 @@ export default function EvidenceTab({ clientId, adminEvidence }: Props) {
         </div>
       </div>
 
-      {/* Symptoms & history + My life & my pain — 2 columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      {/* Symptoms & history + My life & my pain — stacked */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
         {/* Symptoms & history */}
         <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
