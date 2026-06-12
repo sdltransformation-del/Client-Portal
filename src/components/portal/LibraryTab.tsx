@@ -5,6 +5,17 @@ import { VIDEOS } from '@/lib/data'
 export default function LibraryTab() {
   const [modal, setModal] = useState<{ id: string; title: string; meta: string; duration: string; desc: string } | null>(null)
 
+  function openModal(v: typeof VIDEOS[0]) {
+    setModal({ id: v.id, title: v.title, meta: v.meta, duration: v.duration, desc: v.desc })
+    window.scrollTo({ top: 0 })
+    document.body.style.overflow = 'hidden'
+  }
+
+  function closeModal() {
+    setModal(null)
+    document.body.style.overflow = ''
+  }
+
   return (
     <div style={{ padding: '16px 48px 80px', maxWidth: '960px', margin: '0 auto' }} className="anim-fadeup">
       <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -18,7 +29,7 @@ export default function LibraryTab() {
         {VIDEOS.map(v => (
           <div
             key={v.id}
-            onClick={() => setModal({ id: v.id, title: v.title, meta: v.meta, duration: v.duration, desc: v.desc })}
+            onClick={() => openModal(v)}
             style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '14px', overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow 0.2s', display: 'flex', flexDirection: 'column' }}
           >
             <div style={{ aspectRatio: '16/9', background: 'var(--blue-pale)', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
@@ -43,7 +54,7 @@ export default function LibraryTab() {
       </div>
 
       {modal && (
-        <div onClick={() => setModal(null)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(11,26,46,0.78)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} className="anim-fadein">
+        <div onClick={closeModal} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(11,26,46,0.78)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} className="anim-fadein">
           <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '20px', overflow: 'hidden', width: '100%', maxWidth: '760px' }} className="anim-scalein">
             <div style={{ padding: '18px 22px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--stone-100)' }}>
               <div style={{ flex: 1 }}>
@@ -51,7 +62,7 @@ export default function LibraryTab() {
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>{modal.meta} · {modal.duration}</div>
                 <div style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', lineHeight: 1.65 }}>{modal.desc}</div>
               </div>
-              <button onClick={() => setModal(null)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--stone-100)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <button onClick={closeModal} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--stone-100)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
               </button>
             </div>
