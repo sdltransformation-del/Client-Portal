@@ -179,6 +179,34 @@ export default function TodayTab({ client }: Props) {
         </div>
       ) : null}
 
+      {/* Progress update every 3rd day */}
+      {!weekend && currentDay % 3 === 0 && (
+        <div style={{ marginTop: '20px', background: 'white', border: '1.5px solid rgba(27,79,216,0.18)', borderRadius: '16px', padding: '24px 26px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Progress update</div>
+            <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(27,79,216,0.08)', color: 'var(--blue)' }}>For Serge</span>
+          </div>
+          <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Write a progress note in your Recovery Journal</div>
+          <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7, marginBottom: '18px' }}>
+            Every three days, write Serge a short update in your Recovery Journal. Cover these four things:
+            <br /><br />
+            <strong>1. Your symptoms.</strong> How are they right now compared to when you started? Have they moved to different areas? Have they become more irregular? Have they increased or decreased in intensity?
+            <br /><br />
+            <strong>2. Your conviction.</strong> How has your level of conviction changed? Are you more convinced that your symptoms are coming from a mind-body process, or are doubts still pulling you back toward a structural explanation?
+            <br /><br />
+            <strong>3. What has been hard.</strong> What thoughts of doubt have come up recently? What has been the hardest thing in the last few days?
+            <br /><br />
+            <strong>4. Any wins.</strong> Even small ones. This could be approaching an activity you used to fear with a new attitude, finally completing something you could not do before, or recognizing something in your symptoms that tells you they are not structural.
+            <br /><br />
+            Be honest. There are no right answers.
+          </div>
+          <a href="#" onClick={e => { e.preventDefault(); const el = document.querySelector('[data-tab="notes"]') as HTMLElement; el?.click() }} style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'var(--blue)', color: 'white', padding: '10px 20px', borderRadius: '10px', fontSize: '0.84rem', fontWeight: 700, textDecoration: 'none' }}>
+            Open Recovery Journal
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      )}
+
       {/* Daily exercise */}
       {!weekend && (() => {
         const mode = client.exercise_mode || 'both'
