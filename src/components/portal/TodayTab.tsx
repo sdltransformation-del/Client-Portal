@@ -16,8 +16,8 @@ interface Props {
 
 function getCurrentDay(startDate: string | null): number {
   if (!startDate) return 1
-  const start = new Date(startDate)
-  start.setHours(0, 0, 0, 0)
+  const [y, m, d] = startDate.split('-').map(Number)
+  const start = new Date(y, m - 1, d) // local midnight, avoids UTC parse issue
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const diff = Math.floor((today.getTime() - start.getTime()) / 86400000)
@@ -25,8 +25,8 @@ function getCurrentDay(startDate: string | null): number {
 }
 
 function dateForDay(startDate: string, dayNumber: number): Date {
-  const d = new Date(startDate)
-  d.setHours(0, 0, 0, 0)
+  const [y, m, day] = startDate.split('-').map(Number)
+  const d = new Date(y, m - 1, day)
   d.setDate(d.getDate() + dayNumber - 1)
   return d
 }
