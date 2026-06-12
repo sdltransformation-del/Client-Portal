@@ -44,7 +44,7 @@ export default function AdminApp() {
 
   // Evidence
   const [pendingEvidence, setPendingEvidence] = useState<Record<string, EvidenceEntry[]>>({})
-  const [activeSection, setActiveSection] = useState('s1')
+  const [activeSection, setActiveSection] = useState('checklist')
   const [evInput, setEvInput] = useState('')
 
   // Assignments
@@ -358,8 +358,7 @@ export default function AdminApp() {
                       })}
                     </div>
                     <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '14px', padding: '22px', minHeight: '320px' }}>
-                      <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.2rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>{activeSecObj.title}</div>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '18px' }}>{activeSecObj.desc}</div>
+                      <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.2rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '18px' }}>{activeSecObj.title}</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
                         {(pendingEvidence[activeSection] || []).length === 0
                           ? <div style={{ fontSize: '0.82rem', color: 'var(--stone-300)', fontStyle: 'italic', padding: '4px 0 10px' }}>No entries yet.</div>
