@@ -47,7 +47,7 @@ export default function PortalApp({ client, adminEvidence, userEmail }: Props) {
     { id: 'resources', label: 'Resources' },
     { id: 'evidence', label: 'My Evidence' },
     { id: 'community', label: 'Community' },
-    { id: 'notes', label: 'Notes' },
+    { id: 'notes', label: 'Recovery Journal' },
   ]
 
   return (
