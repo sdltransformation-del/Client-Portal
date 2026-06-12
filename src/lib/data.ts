@@ -26,13 +26,13 @@ export const EVIDENCE_CHECKLIST_ITEMS = [
 ]
 
 export const PERSONALITY_ITEMS = [
-  'I put a lot of pressure on myself — to perform, to be enough, to not fall short',
-  'I have perfectionistic tendencies — things need to be done right, and I often feel like I fall short of my own standards',
+  'I put a lot of pressure on myself: to perform, to be enough, to not fall short',
+  'I have perfectionistic tendencies: things need to be done right, and I often feel like I fall short of my own standards',
   'I am more self-critical and self-blaming than most people would be in the same situation',
-  'I feel a strong sense of obligation — to others, to responsibilities, to things I feel I should be doing',
-  'I have a strong sense of duty — once I commit to something, I feel I have to follow through regardless of the cost to myself',
-  'I worry excessively — about outcomes, about what could go wrong, about things outside my control',
-  'I take responsibility for problems that are not mine to solve — I feel responsible for how others feel or what happens around me',
+  'I feel a strong sense of obligation: to others, to responsibilities, to things I feel I should be doing',
+  'I have a strong sense of duty: once I commit to something, I feel I have to follow through regardless of the cost to myself',
+  'I worry excessively: about outcomes, about what could go wrong, about things outside my control',
+  'I take responsibility for problems that are not mine to solve: I feel responsible for how others feel or what happens around me',
   'I am overly conscientious and caring about others, often at the expense of my own needs',
 ]
 

@@ -212,7 +212,7 @@ export default function EvidenceTab({ clientId, adminEvidence }: Props) {
         <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
             <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.3rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>Symptoms & history</div>
-            <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.65 }}>Every symptom, scan, and diagnosis — past and present. Include things that seem unrelated.</div>
+            <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.65 }}>Every symptom, scan, and diagnosis, past and present. Include things that seem unrelated.</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
             {history.length === 0
