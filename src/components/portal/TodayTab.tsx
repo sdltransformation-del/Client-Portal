@@ -189,7 +189,7 @@ export default function TodayTab({ client }: Props) {
 
         const showJournal = mode === 'both' && cycle3 === 1
         const showSomatic = (mode === 'somatic_only' && cycle2 === 1) || (mode === 'both' && cycle3 === 2)
-        const showVisualization = (mode === 'somatic_only' && cycle2 === 0) || (mode === 'both' && cycle3 === 0)
+        const showVisualization = (mode === 'somatic_only' && cycle2 === 0) || (mode === 'both' && cycle3 === 3)
 
         const exerciseLabel = showJournal ? 'Journaling' : showSomatic ? 'Somatic tracking' : 'Visualization'
 
