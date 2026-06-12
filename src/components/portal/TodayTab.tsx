@@ -180,7 +180,7 @@ export default function TodayTab({ client }: Props) {
       ) : null}
 
       {/* Progress update every 3rd day */}
-      {!weekend && currentDay % 3 === 0 && (
+      {!weekend && currentDay % 3 === 1 && (
         <div style={{ marginTop: '20px', background: 'white', border: '1.5px solid rgba(27,79,216,0.18)', borderRadius: '16px', padding: '24px 26px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
             <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Progress update</div>
