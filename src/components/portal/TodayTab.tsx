@@ -197,7 +197,7 @@ export default function TodayTab({ client }: Props) {
                 <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '6px' }}>Journaling</div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Write in your Recovery Journal</div>
                 <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7, marginBottom: '18px' }}>
-                  Take 10–15 minutes to write. It doesn't have to be structured. Write about something that strengthened your conviction today, a doubt you worked through, a feeling you let yourself feel, or a movement you made without fear. Anything that happened — small or large.
+                  Take 5 to 10 minutes to write. It doesn't have to be structured. Write about something that strengthened your conviction today, a doubt you worked through, a feeling you let yourself feel, or a movement you made without fear. Anything that happened, small or large.
                 </div>
                 <a href="#" onClick={e => { e.preventDefault(); const el = document.querySelector('[data-tab="notes"]') as HTMLElement; el?.click() }} style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'var(--blue)', color: 'white', padding: '10px 20px', borderRadius: '10px', fontSize: '0.84rem', fontWeight: 700, textDecoration: 'none' }}>
                   Open Recovery Journal
@@ -211,13 +211,11 @@ export default function TodayTab({ client }: Props) {
                 <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '6px' }}>Somatic tracking</div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Body scan and sensation check-in</div>
                 <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7 }}>
-                  Find a quiet place to sit or lie down. Close your eyes. Start at the top of your head and slowly move your attention down through your body — your face, your jaw, your neck and shoulders, your chest, your belly, your lower back, your hips, your legs, all the way to your feet.
+                  Close your eyes and slow your breath down. Breathe in a few times to center yourself, letting your focus settle on the breath coming in and out. Once you feel grounded, bring your attention to the dominant physical sensation in your body right now. It might be in your back, your chest, your arms, or somewhere else entirely. Just let your attention go there. If you feel something in more than one place, choose one and stay with it.
                   <br /><br />
-                  For each area: notice what is there without judging it. If you find tension, pain, tightness, or any sensation — don't try to fix it. Just observe. Notice its texture, its temperature, whether it moves or stays still. Breathe into it gently.
+                  Now focus on the sensation itself. Breathe into it. Give it a little air, a little space. When a sensation is unpleasant, the instinct is to distract yourself or look away. Do the opposite. Just watch it. Notice it. You are not trying to get rid of it, not trying to change it, not trying to do anything at all. You are simply getting to know it. As you breathe and attend to it, just gather information. Is it pleasant or unpleasant? Widespread or localized? Is it a tightness, a warmth, a pulsing, a tingling? One answer is not better than another. You are just noticing. You are just paying attention.
                   <br /><br />
-                  Remind yourself: <em>this sensation is safe. My brain is producing it. It cannot harm me.</em>
-                  <br /><br />
-                  Spend 10–15 minutes. When you're done, write one sentence about what you noticed.
+                  This sensation is completely safe. It is not dangerous. Your brain is generating it, and right now you are learning to observe it without fear, without judgment, without any goal beyond watching. As you pay attention this way, you are sending your brain a message that this sensation is safe. You are building the neural pathways to feel it without panic. Just be curious. Notice what happens as you attend to it. Does it intensify? Does it shift? Does it stay exactly the same? Whatever it does is fine. You are outcome independent. You are just watching the show. Think of it like lying back in a field watching clouds pass, just noticing the shapes they make, not needing them to be anything different.
                 </div>
               </div>
             )}
