@@ -9,7 +9,6 @@ export const EVIDENCE_CHECKLIST_ITEMS = [
   'My symptoms began without any physical injury or clear physical cause, often upon waking or during a period of stress',
   'My symptoms have persisted long after an injury that should have healed (all injuries heal within 3 months)',
   'My symptoms are symmetric, appearing as a mirror image on both the left and right side of my body',
-  'My symptoms affect one whole side of my body, or half of my face, head, or torso',
   'My symptoms have spread over time to different areas of my body',
   'My symptoms radiate down a whole leg or arm, rather than following a specific nerve pathway',
   'My symptoms occur in many different body parts at the same time',
@@ -23,9 +22,7 @@ export const EVIDENCE_CHECKLIST_ITEMS = [
   'My symptoms are minimal or gone when I am distracted, engaged in something I enjoy, or on vacation',
   'My symptoms temporarily improved with treatments like massage, chiropractic, acupuncture, or supplements',
   'My symptoms are triggered by things unrelated to the actual symptom: foods, smells, sounds, light, screens, weather, or specific movements',
-  'My symptoms are triggered by the anticipation of stress, such as before work, a medical appointment, or a social event',
   'My symptoms appear just from imagining or thinking about a triggering activity, without actually doing it',
-  'My symptoms are triggered by light touch, wind, or cold temperatures that would not physically affect the area in pain',
 ]
 
 export const PERSONALITY_ITEMS = [
