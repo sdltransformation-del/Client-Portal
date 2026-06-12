@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { VIDEOS } from '@/lib/data'
 
 export default function LibraryTab() {
@@ -7,13 +8,10 @@ export default function LibraryTab() {
 
   function openModal(v: typeof VIDEOS[0]) {
     setModal({ id: v.id, title: v.title, meta: v.meta, duration: v.duration, desc: v.desc })
-    window.scrollTo({ top: 0 })
-    document.body.style.overflow = 'hidden'
   }
 
   function closeModal() {
     setModal(null)
-    document.body.style.overflow = ''
   }
 
   return (
@@ -53,7 +51,7 @@ export default function LibraryTab() {
         ))}
       </div>
 
-      {modal && (
+      {modal && createPortal(
         <div onClick={closeModal} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(11,26,46,0.78)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} className="anim-fadein">
           <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '20px', overflow: 'hidden', width: '100%', maxWidth: '760px' }} className="anim-scalein">
             <div style={{ padding: '18px 22px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--stone-100)' }}>
@@ -71,7 +69,7 @@ export default function LibraryTab() {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   )
 }
