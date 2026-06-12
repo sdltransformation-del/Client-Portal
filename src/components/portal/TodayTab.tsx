@@ -208,7 +208,10 @@ export default function TodayTab({ client }: Props) {
 
             {showSomatic && (
               <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px 26px' }}>
-                <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '6px' }}>Somatic tracking</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Somatic tracking</div>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(27,79,216,0.08)', color: 'var(--blue)' }}>5–10 min</span>
+                </div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Body scan and sensation check-in</div>
                 <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7 }}>
                   Close your eyes and slow your breath down. Breathe in a few times to center yourself, letting your focus settle on the breath coming in and out. Once you feel grounded, bring your attention to the dominant physical sensation in your body right now. It might be in your back, your chest, your arms, or somewhere else entirely. Just let your attention go there. If you feel something in more than one place, choose one and stay with it.
