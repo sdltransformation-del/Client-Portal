@@ -20,6 +20,7 @@ interface Props {
     start_date: string | null
     day_number: number | null
     notes: string | null
+    exercise_mode: string | null
   }
   adminEvidence: Record<string, string[]>
   userEmail: string

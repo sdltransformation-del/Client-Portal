@@ -10,6 +10,7 @@ interface Props {
     name: string
     start_date: string | null
     day_number?: number | null
+    exercise_mode?: string | null
   }
 }
 
@@ -177,6 +178,52 @@ export default function TodayTab({ client }: Props) {
           )}
         </div>
       ) : null}
+
+      {/* Daily exercise */}
+      {!weekend && (() => {
+        const mode = client.exercise_mode || 'both'
+        if (mode === 'none') return null
+        const showJournal = mode === 'both' && currentDay % 2 === 1
+        const showSomatic = mode === 'somatic_only' || (mode === 'both' && currentDay % 2 === 0)
+
+        return (
+          <div style={{ marginTop: '20px' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>
+              Today's exercise{mode === 'both' ? ` · ${showJournal ? 'Journaling day' : 'Somatic tracking day'}` : ''}
+            </div>
+
+            {showJournal && (
+              <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px 26px' }}>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '6px' }}>Journaling</div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Write in your Recovery Journal</div>
+                <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7, marginBottom: '18px' }}>
+                  Take 10–15 minutes to write. It doesn't have to be structured. Write about something that strengthened your conviction today, a doubt you worked through, a feeling you let yourself feel, or a movement you made without fear. Anything that happened — small or large.
+                </div>
+                <a href="#" onClick={e => { e.preventDefault(); const el = document.querySelector('[data-tab="notes"]') as HTMLElement; el?.click() }} style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'var(--blue)', color: 'white', padding: '10px 20px', borderRadius: '10px', fontSize: '0.84rem', fontWeight: 700, textDecoration: 'none' }}>
+                  Open Recovery Journal
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+              </div>
+            )}
+
+            {showSomatic && (
+              <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px 26px' }}>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '6px' }}>Somatic tracking</div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Body scan and sensation check-in</div>
+                <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7 }}>
+                  Find a quiet place to sit or lie down. Close your eyes. Start at the top of your head and slowly move your attention down through your body — your face, your jaw, your neck and shoulders, your chest, your belly, your lower back, your hips, your legs, all the way to your feet.
+                  <br /><br />
+                  For each area: notice what is there without judging it. If you find tension, pain, tightness, or any sensation — don't try to fix it. Just observe. Notice its texture, its temperature, whether it moves or stays still. Breathe into it gently.
+                  <br /><br />
+                  Remind yourself: <em>this sensation is safe. My brain is producing it. It cannot harm me.</em>
+                  <br /><br />
+                  Spend 10–15 minutes. When you're done, write one sentence about what you noticed.
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Video Modal */}
       {videoModal && (

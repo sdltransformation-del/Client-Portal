@@ -6,7 +6,7 @@ import { SECTIONS, VIDEOS, RESOURCES } from '@/lib/data'
 const ADMIN_PASSWORD = 'myb-admin-2026'
 
 interface Client {
-  id: string; name: string; email: string; start_date: string | null; day_number: number | null; notes: string | null; created_at: string
+  id: string; name: string; email: string; start_date: string | null; day_number: number | null; notes: string | null; created_at: string; exercise_mode: string | null
 }
 interface EvidenceEntry { id?: string; text: string; saved: boolean }
 interface Assignment {
@@ -46,7 +46,7 @@ export default function AdminApp() {
 
   // Details
   const [editName, setEditName] = useState(''); const [editEmail, setEditEmail] = useState('')
-  const [editDate, setEditDate] = useState(''); const [editDay, setEditDay] = useState(1); const [editNotes, setEditNotes] = useState('')
+  const [editDate, setEditDate] = useState(''); const [editDay, setEditDay] = useState(1); const [editNotes, setEditNotes] = useState(''); const [editExerciseMode, setEditExerciseMode] = useState('both')
   const [dirty, setDirty] = useState(false)
 
   // Evidence
@@ -127,7 +127,7 @@ export default function AdminApp() {
     ])
     const c = clientData?.[0]; if (!c) return
     setCurrentClient(c)
-    setEditName(c.name); setEditEmail(c.email); setEditDate(c.start_date || ''); setEditDay(c.day_number || 1); setEditNotes(c.notes || '')
+    setEditName(c.name); setEditEmail(c.email); setEditDate(c.start_date || ''); setEditDay(c.day_number || 1); setEditNotes(c.notes || ''); setEditExerciseMode(c.exercise_mode || 'both')
     const pe: Record<string, EvidenceEntry[]> = {}
     SECTIONS.forEach(s => { pe[s.id] = [] })
     for (const e of evData || []) { if (pe[e.section]) pe[e.section].push({ id: e.id, text: e.content, saved: true }) }
@@ -141,12 +141,12 @@ export default function AdminApp() {
   async function saveClient() {
     if (!currentClient) return
     try {
-      await supabase.from('clients').update({ name: editName, email: editEmail, start_date: editDate || null, day_number: editDay, notes: editNotes }).eq('id', currentClient.id)
+      await supabase.from('clients').update({ name: editName, email: editEmail, start_date: editDate || null, day_number: editDay, notes: editNotes, exercise_mode: editExerciseMode }).eq('id', currentClient.id)
       await supabase.from('evidence').delete().eq('client_id', currentClient.id)
       const allEntries: { client_id: string; section: string; content: string; added_by: string }[] = []
       SECTIONS.forEach(s => { (pendingEvidence[s.id] || []).forEach(e => { allEntries.push({ client_id: currentClient.id, section: s.id, content: e.text, added_by: 'admin' }) }) })
       if (allEntries.length > 0) await supabase.from('evidence').insert(allEntries)
-      setCurrentClient(prev => prev ? { ...prev, name: editName, email: editEmail, start_date: editDate, day_number: editDay, notes: editNotes } : null)
+      setCurrentClient(prev => prev ? { ...prev, name: editName, email: editEmail, start_date: editDate, day_number: editDay, notes: editNotes, exercise_mode: editExerciseMode } : null)
       setDirty(false); loadClients(); showToast('Saved successfully', 'success')
     } catch { showToast('Error saving', 'error') }
   }
@@ -400,6 +400,26 @@ export default function AdminApp() {
                         <input type={f.type} value={f.val} onChange={e => { f.set(e.target.value); setDirty(true) }} style={{ fontFamily: 'inherit', fontSize: '0.9rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', outline: 'none', width: '100%' }} />
                       </div>
                     ))}
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Daily exercises</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {[
+                          { val: 'both', label: 'Journaling + Somatic Tracking', desc: 'Alternates every day — journal one day, somatic tracking the next' },
+                          { val: 'somatic_only', label: 'Somatic Tracking only', desc: 'Somatic tracking every day, no journaling' },
+                          { val: 'none', label: 'None', desc: 'No daily exercise shown' },
+                        ].map(opt => (
+                          <label key={opt.val} onClick={() => { setEditExerciseMode(opt.val); setDirty(true) }} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 14px', borderRadius: '10px', border: `1.5px solid ${editExerciseMode === opt.val ? 'var(--blue)' : 'var(--stone-200)'}`, background: editExerciseMode === opt.val ? 'var(--blue-pale)' : 'var(--stone-50)', cursor: 'pointer', transition: 'all 0.15s' }}>
+                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: `2px solid ${editExerciseMode === opt.val ? 'var(--blue)' : 'var(--stone-300)'}`, background: editExerciseMode === opt.val ? 'var(--blue)' : 'white', flexShrink: 0, marginTop: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {editExerciseMode === opt.val && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'white' }} />}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--stone-900)' }}>{opt.label}</div>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{opt.desc}</div>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Notes (internal only)</label>
                       <textarea value={editNotes} onChange={e => { setEditNotes(e.target.value); setDirty(true) }} style={{ fontFamily: 'inherit', fontSize: '0.9rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '10px 12px', outline: 'none', resize: 'vertical', minHeight: '80px', lineHeight: 1.6, width: '100%' }} />
