@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { SECTIONS, VIDEOS, RESOURCES } from '@/lib/data'
 
-const ADMIN_PASSWORD = 'myb-admin-2026'
+const ADMIN_PASSWORD = 'sdsdsd'
 
 interface Client {
   id: string; name: string; email: string; start_date: string | null; day_number: number | null; notes: string | null; created_at: string; exercise_mode: string | null; unlearn_pain_only: boolean | null
