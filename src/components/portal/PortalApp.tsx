@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import RemindersOverlay from './RemindersOverlay'
+import CheckInOverlay from './CheckInOverlay'
 import TodayTab from './TodayTab'
 import LibraryTab from './LibraryTab'
 import ResourcesTab from './ResourcesTab'
@@ -24,6 +25,12 @@ interface Props {
 
 export default function PortalApp({ client }: Props) {
   const [reminderDone, setReminderDone] = useState(false)
+  const [showCheckIn, setShowCheckIn] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const last = localStorage.getItem(`checkin_dismissed_${client.id}`)
+    if (!last) return true
+    return Date.now() - Number(last) > 2 * 24 * 60 * 60 * 1000
+  })
   const [tab, setTab] = useState<Tab>('today')
   const router = useRouter()
   const supabase = createClient()
@@ -50,6 +57,7 @@ export default function PortalApp({ client }: Props) {
   return (
     <div style={{ background: 'var(--blue-pale)', minHeight: '100vh' }}>
       {!reminderDone && <RemindersOverlay onEnter={() => setReminderDone(true)} unlearnPainOnly={client.unlearn_pain_only ?? false} />}
+      {reminderDone && showCheckIn && <CheckInOverlay clientId={client.id} onDismiss={() => setShowCheckIn(false)} />}
 
       {/* Topbar */}
       <nav style={{
