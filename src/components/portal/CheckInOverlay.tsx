@@ -1,8 +1,7 @@
 'use client'
 
-export default function CheckInOverlay({ clientId, onDismiss }: { clientId: string; onDismiss: () => void }) {
+export default function CheckInOverlay({ onDismiss }: { onDismiss: () => void }) {
   function dismiss() {
-    localStorage.setItem(`checkin_dismissed_${clientId}`, String(Date.now()))
     onDismiss()
   }
 

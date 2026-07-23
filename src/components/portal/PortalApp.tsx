@@ -27,9 +27,17 @@ export default function PortalApp({ client }: Props) {
   const [reminderDone, setReminderDone] = useState(false)
   const [showCheckIn, setShowCheckIn] = useState(() => {
     if (typeof window === 'undefined') return false
-    const last = localStorage.getItem(`checkin_dismissed_${client.id}`)
-    if (!last) return true
-    return Date.now() - Number(last) > 2 * 24 * 60 * 60 * 1000
+    const startDate = client.start_date
+    if (!startDate) return false
+    const [y, m, d] = startDate.slice(0, 10).split('-').map(Number)
+    const start = new Date(y, m - 1, d)
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const currentDay = Math.max(1, Math.floor((today.getTime() - start.getTime()) / 86400000) + 1)
+    if (currentDay <= 1 || currentDay % 2 !== 0) return false
+    const lastShown = Number(localStorage.getItem(`checkin_last_shown_${client.id}`) || 0)
+    if (lastShown === currentDay) return false
+    localStorage.setItem(`checkin_last_shown_${client.id}`, String(currentDay))
+    return true
   })
   const [tab, setTab] = useState<Tab>('today')
   const router = useRouter()
@@ -57,7 +65,7 @@ export default function PortalApp({ client }: Props) {
   return (
     <div style={{ background: 'var(--blue-pale)', minHeight: '100vh' }}>
       {!reminderDone && <RemindersOverlay onEnter={() => setReminderDone(true)} unlearnPainOnly={client.unlearn_pain_only ?? false} />}
-      {reminderDone && showCheckIn && <CheckInOverlay clientId={client.id} onDismiss={() => setShowCheckIn(false)} />}
+      {reminderDone && showCheckIn && <CheckInOverlay onDismiss={() => setShowCheckIn(false)} />}
 
       {/* Topbar */}
       <nav style={{
