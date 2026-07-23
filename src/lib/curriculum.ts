@@ -46,4 +46,7 @@ export const CURRICULUM: CurriculumDay[] = [
   { day: 38, type: 'article', refId: 'nih-scale' },
   { day: 39, type: 'article', refId: 'deyo-overtreatment' },
   { day: 40, type: 'video',   refId: 'pHM45IXkXeM' },
+  { day: 41, type: 'video',   refId: 'ic6se1fOpkc' },
+  { day: 42, type: 'video',   refId: 'kB4gvqDsVnA', part: { current: 1, total: 2, startMin: 0,  endMin: 18 } },
+  { day: 43, type: 'video',   refId: 'kB4gvqDsVnA', part: { current: 2, total: 2, startMin: 18, endMin: 35 } },
 ]
