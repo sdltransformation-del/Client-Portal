@@ -27,18 +27,5 @@ export default async function PortalPage() {
     )
   }
 
-  // Fetch evidence seeded by admin
-  const { data: evidenceRows } = await supabase
-    .from('evidence')
-    .select('*')
-    .eq('client_id', client.id)
-    .order('created_at', { ascending: true })
-
-  const adminEvidence: Record<string, string[]> = {}
-  for (const e of evidenceRows ?? []) {
-    if (!adminEvidence[e.section]) adminEvidence[e.section] = []
-    adminEvidence[e.section].push(e.content)
-  }
-
-  return <PortalApp client={client} adminEvidence={adminEvidence} userEmail={user.email!} />
+  return <PortalApp client={client} />
 }

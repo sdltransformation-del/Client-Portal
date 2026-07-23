@@ -6,10 +6,8 @@ import RemindersOverlay from './RemindersOverlay'
 import TodayTab from './TodayTab'
 import LibraryTab from './LibraryTab'
 import ResourcesTab from './ResourcesTab'
-import EvidenceTab from './EvidenceTab'
-import NotesTab from './NotesTab'
 
-type Tab = 'today' | 'library' | 'resources' | 'evidence' | 'notes'
+type Tab = 'today' | 'library' | 'resources'
 
 interface Props {
   client: {
@@ -22,11 +20,9 @@ interface Props {
     exercise_mode: string | null
     unlearn_pain_only: boolean | null
   }
-  adminEvidence: Record<string, string[]>
-  userEmail: string
 }
 
-export default function PortalApp({ client, adminEvidence, userEmail }: Props) {
+export default function PortalApp({ client }: Props) {
   const [reminderDone, setReminderDone] = useState(false)
   const [tab, setTab] = useState<Tab>('today')
   const router = useRouter()
@@ -49,8 +45,6 @@ export default function PortalApp({ client, adminEvidence, userEmail }: Props) {
     { id: 'today', label: 'Today' },
     { id: 'library', label: 'Video Library' },
     { id: 'resources', label: 'Resources' },
-    { id: 'evidence', label: 'My Evidence' },
-    { id: 'notes', label: 'Recovery Journal' },
   ]
 
   return (
@@ -107,8 +101,6 @@ export default function PortalApp({ client, adminEvidence, userEmail }: Props) {
         {tab === 'today'     && <TodayTab client={client} />}
         {tab === 'library'   && <LibraryTab />}
         {tab === 'resources' && <ResourcesTab />}
-        {tab === 'evidence'  && <EvidenceTab clientId={client.id} adminEvidence={adminEvidence} />}
-        {tab === 'notes'     && <NotesTab client={client} />}
       </div>
 
       {/* Footer */}
