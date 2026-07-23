@@ -122,7 +122,7 @@ export default function TodayTab({ client }: Props) {
       ) : programDone && isToday ? (
         <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '48px 32px', textAlign: 'center' }}>
           <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.6rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '8px' }}>Program complete</div>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '360px', margin: '0 auto' }}>You have completed all 43 days. Well done.</div>
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '360px', margin: '0 auto' }}>You have completed all 47 days. Well done.</div>
         </div>
 
       ) : !entry ? (

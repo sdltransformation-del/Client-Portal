@@ -49,4 +49,8 @@ export const CURRICULUM: CurriculumDay[] = [
   { day: 41, type: 'video',   refId: 'ic6se1fOpkc' },
   { day: 42, type: 'video',   refId: 'kB4gvqDsVnA', part: { current: 1, total: 2, startMin: 0,  endMin: 18 } },
   { day: 43, type: 'video',   refId: 'kB4gvqDsVnA', part: { current: 2, total: 2, startMin: 18, endMin: 35 } },
+  { day: 44, type: 'video',   refId: 'dWD3SwfzA0c', part: { current: 1, total: 4, startMin: 0,  endMin: 18 } },
+  { day: 45, type: 'video',   refId: 'dWD3SwfzA0c', part: { current: 2, total: 4, startMin: 18, endMin: 36 } },
+  { day: 46, type: 'video',   refId: 'dWD3SwfzA0c', part: { current: 3, total: 4, startMin: 36, endMin: 54 } },
+  { day: 47, type: 'video',   refId: 'dWD3SwfzA0c', part: { current: 4, total: 4, startMin: 54, endMin: 73 } },
 ]
