@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { SECTIONS, VIDEOS, RESOURCES } from '@/lib/data'
+import { CURRICULUM } from '@/lib/curriculum'
 
 const ADMIN_PASSWORD = 'sdsdsd'
 
@@ -19,7 +20,8 @@ interface JournalEntry {
   id: string; client_id: string; text: string; created_at: string
 }
 
-type AdminTab = 'details' | 'evidence' | 'assignments' | 'activity'
+type AdminTab = 'details' | 'evidence' | 'assignments' | 'activity' | 'progress'
+type DayCompletion = { day_number: number; content_done: boolean; assignment_done: boolean }
 
 function timeAgo(iso: string) {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000
@@ -61,6 +63,9 @@ export default function AdminApp() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
   const [activityLoading, setActivityLoading] = useState(false)
 
+  // Progress
+  const [progressData, setProgressData] = useState<DayCompletion[]>([])
+
   // Modal
   const [showModal, setShowModal] = useState(false)
   const [newName, setNewName] = useState(''); const [newEmail, setNewEmail] = useState(''); const [newDate, setNewDate] = useState('')
@@ -81,12 +86,13 @@ export default function AdminApp() {
   }
 
   async function selectClient(id: string) {
-    const [{ data: clientData }, { data: evData }, { data: assignData }, { data: actData }, { data: journalData }] = await Promise.all([
+    const [{ data: clientData }, { data: evData }, { data: assignData }, { data: actData }, { data: journalData }, { data: progressRows }] = await Promise.all([
       supabase.from('clients').select('*').eq('id', id).limit(1),
       supabase.from('evidence').select('*').eq('client_id', id).order('created_at', { ascending: true }),
       supabase.from('assignments').select('*').eq('client_id', id).order('day_number', { ascending: true }),
       supabase.from('activity_log').select('*').eq('client_id', id).order('created_at', { ascending: false }),
-      supabase.from('journal_entries').select('*').eq('client_id', id).order('created_at', { ascending: false })
+      supabase.from('journal_entries').select('*').eq('client_id', id).order('created_at', { ascending: false }),
+      supabase.from('daily_completions').select('day_number,content_done,assignment_done').eq('client_id', id).order('day_number', { ascending: true })
     ])
     const c = clientData?.[0]; if (!c) return
     setCurrentClient(c)
@@ -98,6 +104,7 @@ export default function AdminApp() {
     setAssignments(assignData || [])
     setActivityLog(actData || [])
     setJournalEntries(journalData || [])
+    setProgressData(progressRows || [])
     setDirty(false); setEvInput(''); setAdminTab('details'); loadClients()
   }
 
@@ -273,9 +280,9 @@ export default function AdminApp() {
 
               {/* Inner tabs */}
               <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'white', border: '1px solid var(--stone-200)', borderRadius: '12px', padding: '4px' }}>
-                {(['details', 'evidence', 'assignments', 'activity'] as AdminTab[]).map(t => (
+                {(['details', 'assignments', 'progress', 'activity'] as AdminTab[]).map(t => (
                   <button key={t} onClick={() => setAdminTab(t)} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 700, padding: '9px 16px', borderRadius: '9px', border: 'none', background: adminTab === t ? 'var(--blue)' : 'none', color: adminTab === t ? 'white' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize' }}>
-                    {t === 'activity' ? 'Activity' : t}{t === 'assignments' ? ` (${assignments.length})` : ''}
+                    {t === 'progress' ? `Progress` : t === 'assignments' ? `Assignments (${assignments.length})` : t === 'activity' ? 'Activity' : 'Details'}
                   </button>
                 ))}
               </div>
@@ -463,6 +470,68 @@ export default function AdminApp() {
                   </div>
                 </div>
               )}
+
+              {/* ── PROGRESS TAB ── */}
+              {adminTab === 'progress' && (() => {
+                const completionMap: Record<number, DayCompletion> = {}
+                for (const row of progressData) completionMap[row.day_number] = row
+                const currentDay = (() => {
+                  if (!currentClient.start_date) return 1
+                  const [y, m, d] = currentClient.start_date.slice(0, 10).split('-').map(Number)
+                  const start = new Date(y, m - 1, d)
+                  const today = new Date(); today.setHours(0, 0, 0, 0)
+                  return Math.max(1, Math.floor((today.getTime() - start.getTime()) / 86400000) + 1)
+                })()
+                const totalDone = progressData.filter(r => r.content_done && r.assignment_done).length
+                const contentDone = progressData.filter(r => r.content_done).length
+                const assignDone = progressData.filter(r => r.assignment_done).length
+                return (
+                  <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                      {[
+                        { label: 'Days fully complete', value: totalDone, total: currentDay },
+                        { label: 'Content watched/read', value: contentDone, total: currentDay },
+                        { label: 'Assignments done', value: assignDone, total: currentDay },
+                      ].map(s => (
+                        <div key={s.label} style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '14px', padding: '18px 20px' }}>
+                          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--blue)', lineHeight: 1 }}>{s.value}<span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>/{s.total}</span></div>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: '6px' }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
+                      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--stone-100)', display: 'grid', gridTemplateColumns: '60px 1fr 120px 140px', gap: '12px', fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                        <div>Day</div><div>Content</div><div>Watched/Read</div><div>Assignment</div>
+                      </div>
+                      <div style={{ maxHeight: '520px', overflowY: 'auto' }}>
+                        {Array.from({ length: currentDay }, (_, i) => i + 1).map(day => {
+                          const row = completionMap[day]
+                          const contentDone = row?.content_done ?? false
+                          const assignDone = row?.assignment_done ?? false
+                          const entry = CURRICULUM.find(c => c.day === day)
+                          const label = entry ? (entry.type === 'video' ? (entry.part ? `Video pt ${entry.part.current}/${entry.part.total}` : 'Video') : 'Article') : '—'
+                          return (
+                            <div key={day} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 120px 140px', gap: '12px', padding: '12px 20px', borderBottom: '1px solid var(--stone-50)', alignItems: 'center', background: contentDone && assignDone ? '#f0fdf4' : 'transparent' }}>
+                              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--stone-700)' }}>{day}</div>
+                              <div style={{ fontSize: '0.82rem', color: 'var(--stone-700)' }}>{label}</div>
+                              <div>
+                                {contentDone
+                                  ? <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#16a34a', background: '#dcfce7', padding: '3px 10px', borderRadius: '100px' }}>Done</span>
+                                  : <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', background: 'var(--stone-100)', padding: '3px 10px', borderRadius: '100px' }}>Not yet</span>}
+                              </div>
+                              <div>
+                                {assignDone
+                                  ? <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#16a34a', background: '#dcfce7', padding: '3px 10px', borderRadius: '100px' }}>Done</span>
+                                  : <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', background: 'var(--stone-100)', padding: '3px 10px', borderRadius: '100px' }}>Not yet</span>}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* ── ACTIVITY TAB ── */}
               {adminTab === 'activity' && (

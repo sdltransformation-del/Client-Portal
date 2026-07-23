@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { VIDEOS, RESOURCES } from '@/lib/data'
 import { CURRICULUM } from '@/lib/curriculum'
@@ -54,6 +54,18 @@ export default function TodayTab({ client }: Props) {
   const currentDay = getCurrentDay(client.start_date)
   const [viewDay, setViewDay] = useState(currentDay)
   const [videoModal, setVideoModal] = useState<{ ytId: string; title: string; meta: string; startSec: number } | null>(null)
+  const [completions, setCompletions] = useState<Record<number, { content_done: boolean; assignment_done: boolean }>>({})
+
+  useEffect(() => {
+    supabase.from('daily_completions').select('day_number,content_done,assignment_done').eq('client_id', client.id)
+      .then(({ data }) => {
+        if (data) {
+          const map: Record<number, { content_done: boolean; assignment_done: boolean }> = {}
+          for (const row of data) map[row.day_number] = { content_done: row.content_done, assignment_done: row.assignment_done }
+          setCompletions(map)
+        }
+      })
+  }, [])
 
   const entry = CURRICULUM.find(c => c.day === viewDay)
   const video = entry?.type === 'video' ? VIDEOS.find(v => v.id === entry.refId) : null
@@ -75,6 +87,28 @@ export default function TodayTab({ client }: Props) {
   function logArticle() {
     if (!article || !entry) return
     supabase.from('activity_log').insert({ client_id: client.id, type: 'article', day_number: viewDay, content_id: entry.refId, content_title: article.title })
+  }
+
+  async function toggleCompletion(field: 'content_done' | 'assignment_done') {
+    const current = completions[viewDay] || { content_done: false, assignment_done: false }
+    const updated = { ...current, [field]: !current[field] }
+    setCompletions(prev => ({ ...prev, [viewDay]: updated }))
+    await supabase.from('daily_completions').upsert(
+      { client_id: client.id, day_number: viewDay, ...updated },
+      { onConflict: 'client_id,day_number' }
+    )
+  }
+
+  function CheckButton({ field, labelUndone, labelDone }: { field: 'content_done' | 'assignment_done'; labelUndone: string; labelDone: string }) {
+    const done = completions[viewDay]?.[field] ?? false
+    return (
+      <button onClick={() => toggleCompletion(field)} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', fontFamily: 'inherit', background: done ? '#f0fdf4' : 'white', border: `1.5px solid ${done ? '#16a34a' : 'rgba(27,79,216,0.12)'}`, borderRadius: '12px', padding: '14px 18px', cursor: 'pointer', transition: 'all 0.2s', marginTop: '10px' }}>
+        <div style={{ width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0, background: done ? '#16a34a' : 'transparent', border: `2px solid ${done ? '#16a34a' : 'var(--stone-300)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+          {done && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>}
+        </div>
+        <span style={{ fontSize: '0.88rem', fontWeight: 600, color: done ? '#16a34a' : 'var(--stone-700)', transition: 'color 0.2s' }}>{done ? labelDone : labelUndone}</span>
+      </button>
+    )
   }
 
   return (
@@ -180,20 +214,26 @@ export default function TodayTab({ client }: Props) {
         </div>
       ) : null}
 
+      {/* Content done checkbox */}
+      {!weekend && entry && (
+        <CheckButton
+          field="content_done"
+          labelUndone={entry.type === 'video' ? 'Mark video as watched' : 'Mark article as read'}
+          labelDone={entry.type === 'video' ? 'Video watched ✓' : 'Article read ✓'}
+        />
+      )}
+
       {/* Daily exercise */}
       {!weekend && (() => {
         const cycle3 = ((viewDay - 1) % 3) + 1
-
         const showJournal = cycle3 === 1
-        const showSomatic = cycle3 === 2
-        const showVisualization = cycle3 === 3
-
-        const exerciseLabel = showJournal ? 'Journaling' : showSomatic ? 'Somatic tracking' : 'Visualization'
+        const showSomatic = true
+        const showVisualization = true
 
         return (
           <div style={{ marginTop: '20px' }}>
             <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>
-              Today's exercise · {exerciseLabel}
+              Today's exercises
             </div>
 
             {showJournal && (
@@ -248,6 +288,11 @@ export default function TodayTab({ client }: Props) {
                 </div>
               </div>
             )}
+            <CheckButton
+              field="assignment_done"
+              labelUndone="Mark assignments as done"
+              labelDone="Assignments done ✓"
+            />
           </div>
         )
       })()}
