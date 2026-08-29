@@ -3,10 +3,10 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --blue: #1B4FD8;
-  --blue-deep: #1339A5;
-  --blue-pale: #EEF2FC;
-  --navy: #0B1A2E;
+  --blue: #f97316;
+  --blue-deep: #ea6c0a;
+  --blue-pale: #f4f4f5;
+  --navy: #18181b;
   --white: #FFFFFF;
   --stone-50: #F7F7F5;
   --stone-100: #EFEFEC;

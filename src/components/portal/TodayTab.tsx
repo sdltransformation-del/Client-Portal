@@ -102,7 +102,7 @@ export default function TodayTab({ client }: Props) {
   function CheckButton({ field, labelUndone, labelDone }: { field: 'content_done' | 'assignment_done'; labelUndone: string; labelDone: string }) {
     const done = completions[viewDay]?.[field] ?? false
     return (
-      <button onClick={() => toggleCompletion(field)} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', fontFamily: 'inherit', background: done ? '#f0fdf4' : 'white', border: `1.5px solid ${done ? '#16a34a' : 'rgba(27,79,216,0.12)'}`, borderRadius: '12px', padding: '14px 18px', cursor: 'pointer', transition: 'all 0.2s', marginTop: '10px' }}>
+      <button onClick={() => toggleCompletion(field)} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', fontFamily: 'inherit', background: done ? '#f0fdf4' : 'white', border: `1.5px solid ${done ? '#16a34a' : 'rgba(249,115,22,0.2)'}`, borderRadius: '12px', padding: '14px 18px', cursor: 'pointer', transition: 'all 0.2s', marginTop: '10px' }}>
         <div style={{ width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0, background: done ? '#16a34a' : 'transparent', border: `2px solid ${done ? '#16a34a' : 'var(--stone-300)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
           {done && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>}
         </div>
@@ -112,7 +112,7 @@ export default function TodayTab({ client }: Props) {
   }
 
   return (
-    <div style={{ padding: '16px 48px 80px', maxWidth: '960px', margin: '0 auto' }} className="anim-fadeup">
+    <div style={{ padding: '32px 48px 80px', maxWidth: '960px', margin: '0 auto' }} className="anim-fadeup">
 
       {/* Header */}
       <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -130,14 +130,14 @@ export default function TodayTab({ client }: Props) {
           <button
             onClick={() => setViewDay(v => Math.max(1, v - 1))}
             disabled={viewDay <= 1}
-            style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid rgba(27,79,216,0.2)', background: 'white', cursor: viewDay <= 1 ? 'not-allowed' : 'pointer', opacity: viewDay <= 1 ? 0.35 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+            style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid rgba(249,115,22,0.25)', background: 'white', cursor: viewDay <= 1 ? 'not-allowed' : 'pointer', opacity: viewDay <= 1 ? 0.35 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
           <button
             onClick={() => setViewDay(v => Math.min(currentDay, v + 1))}
             disabled={viewDay >= currentDay}
-            style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid rgba(27,79,216,0.2)', background: 'white', cursor: viewDay >= currentDay ? 'not-allowed' : 'pointer', opacity: viewDay >= currentDay ? 0.35 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+            style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid rgba(249,115,22,0.25)', background: 'white', cursor: viewDay >= currentDay ? 'not-allowed' : 'pointer', opacity: viewDay >= currentDay ? 0.35 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
           </button>
@@ -147,27 +147,27 @@ export default function TodayTab({ client }: Props) {
 
       {/* Weekend rest */}
       {weekend ? (
-        <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '48px 32px', textAlign: 'center' }}>
+        <div style={{ background: 'white', border: '1px solid rgba(249,115,22,0.1)', borderRadius: '16px', padding: '48px 32px', textAlign: 'center' }}>
           <div style={{ fontSize: '1.5rem', marginBottom: '12px' }}>—</div>
           <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.5rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '8px' }}>Rest day</div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '360px', margin: '0 auto' }}>Weekends are off. Come back Monday.</div>
         </div>
 
       ) : programDone && isToday ? (
-        <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '48px 32px', textAlign: 'center' }}>
+        <div style={{ background: 'white', border: '1px solid rgba(249,115,22,0.1)', borderRadius: '16px', padding: '48px 32px', textAlign: 'center' }}>
           <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.6rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '8px' }}>Program complete</div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '360px', margin: '0 auto' }}>You have completed all 56 days. Well done.</div>
         </div>
 
       ) : !entry ? (
-        <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '48px 32px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+        <div style={{ background: 'white', border: '1px solid rgba(249,115,22,0.1)', borderRadius: '16px', padding: '48px 32px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
           Nothing scheduled for this day.
         </div>
 
       ) : entry.type === 'video' && video ? (
         <div
           onClick={openVideo}
-          style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px 26px', cursor: 'pointer', transition: 'box-shadow 0.2s' }}
+          style={{ background: 'white', border: '1px solid rgba(249,115,22,0.12)', borderRadius: '16px', padding: '24px 26px', cursor: 'pointer', transition: 'box-shadow 0.2s' }}
         >
           <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '6px' }}>
             Video{entry.part ? ` · Part ${entry.part.current} of ${entry.part.total}` : ''}
@@ -187,13 +187,13 @@ export default function TodayTab({ client }: Props) {
               </span>
             )}
             {!entry.part && video.duration && (
-              <span style={{ fontSize: '0.75rem', padding: '4px 12px', borderRadius: '100px', background: 'rgba(27,79,216,0.08)', color: 'var(--blue)', fontWeight: 600 }}>{video.duration}</span>
+              <span style={{ fontSize: '0.75rem', padding: '4px 12px', borderRadius: '100px', background: 'rgba(249,115,22,0.1)', color: 'var(--blue)', fontWeight: 600 }}>{video.duration}</span>
             )}
           </div>
         </div>
 
       ) : entry.type === 'article' && article ? (
-        <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px 26px' }}>
+        <div style={{ background: 'white', border: '1px solid rgba(249,115,22,0.12)', borderRadius: '16px', padding: '24px 26px' }}>
           <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)', marginBottom: '6px' }}>
             {article.type === 'study' ? 'Study' : 'Article'}
           </div>
@@ -237,10 +237,10 @@ export default function TodayTab({ client }: Props) {
             </div>
 
             {showJournal && (
-              <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px 26px' }}>
+              <div style={{ background: 'white', border: '1px solid rgba(249,115,22,0.12)', borderRadius: '16px', padding: '24px 26px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Journaling</div>
-                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(27,79,216,0.08)', color: 'var(--blue)' }}>20 min</span>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(249,115,22,0.1)', color: 'var(--blue)' }}>20 min</span>
                 </div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>JournalSpeak</div>
                 <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7 }}>
@@ -254,10 +254,10 @@ export default function TodayTab({ client }: Props) {
             )}
 
             {showSomatic && (
-              <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px 26px' }}>
+              <div style={{ background: 'white', border: '1px solid rgba(249,115,22,0.12)', borderRadius: '16px', padding: '24px 26px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Somatic tracking</div>
-                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(27,79,216,0.08)', color: 'var(--blue)' }}>5–10 min</span>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(249,115,22,0.1)', color: 'var(--blue)' }}>5–10 min</span>
                 </div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Body scan and sensation check-in</div>
                 <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7 }}>
@@ -271,10 +271,10 @@ export default function TodayTab({ client }: Props) {
             )}
 
             {showVisualization && (
-              <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.1)', borderRadius: '16px', padding: '24px 26px' }}>
+              <div style={{ background: 'white', border: '1px solid rgba(249,115,22,0.12)', borderRadius: '16px', padding: '24px 26px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Visualization</div>
-                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(27,79,216,0.08)', color: 'var(--blue)' }}>5–10 min</span>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(249,115,22,0.1)', color: 'var(--blue)' }}>5–10 min</span>
                 </div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Visualizing your pain free self</div>
                 <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7 }}>
