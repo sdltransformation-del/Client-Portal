@@ -111,7 +111,7 @@ export default function PortalApp({ client }: Props) {
         {/* Logo */}
         <div style={{ padding: '0 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '16px' }}>
           <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'white' }}>The Way Back</div>
-          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: '3px', letterSpacing: '0.04em' }}>Pain recovery program</div>
+          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: '3px', letterSpacing: '0.04em' }}>Your journey to becoming pain-free</div>
         </div>
 
         {/* Nav */}

@@ -25,7 +25,7 @@ function getCurrentDay(startDate: string | null): number {
 }
 
 function dateForDay(startDate: string, dayNumber: number): Date {
-  const [y, m, day] = startDate.split('-').map(Number)
+  const [y, m, day] = startDate.slice(0, 10).split('-').map(Number)
   const d = new Date(y, m - 1, day)
   d.setDate(d.getDate() + dayNumber - 1)
   return d

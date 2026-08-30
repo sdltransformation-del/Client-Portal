@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { VIDEOS, RESOURCES } from '@/lib/data'
 import { CURRICULUM } from '@/lib/curriculum'
@@ -22,6 +22,7 @@ export default function PathTab({ client }: Props) {
   const [selected, setSelected] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [videoModal, setVideoModal] = useState<{ ytId: string; title: string; startSec: number } | null>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     supabase.from('daily_completions').select('day_number,content_done').eq('client_id', client.id)
@@ -69,6 +70,12 @@ export default function PathTab({ client }: Props) {
     const chunk = Array.from({ length: Math.min(COLS, totalDays - i) }, (_, j) => i + j + 1)
     rows.push(chunk)
   }
+
+  useEffect(() => {
+    if (selected && panelRef.current) {
+      panelRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [selected])
 
   const selectedEntry = selected ? CURRICULUM.find(c => c.day === selected) : null
   const selectedVideo = selectedEntry?.type === 'video' ? VIDEOS.find(v => v.id === selectedEntry.refId) : null
@@ -202,7 +209,7 @@ export default function PathTab({ client }: Props) {
 
       {/* Selected day panel */}
       {selected && selectedEntry && (
-        <div style={{ background: 'white', borderRadius: '16px', border: `1.5px solid ${ORANGE}`, overflow: 'hidden' }} className="anim-fadein">
+        <div ref={panelRef} style={{ background: 'white', borderRadius: '16px', border: `1.5px solid ${ORANGE}`, overflow: 'hidden' }} className="anim-fadein">
           <div style={{ background: DARK, padding: '20px 26px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '5px' }}>
