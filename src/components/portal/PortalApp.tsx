@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import RemindersOverlay from './RemindersOverlay'
 import CheckInOverlay from './CheckInOverlay'
 import TodayTab from './TodayTab'
-import LibraryTab from './LibraryTab'
-import ResourcesTab from './ResourcesTab'
+import PathTab from './PathTab'
+import EvidenceTab from './EvidenceTab'
 
-type Tab = 'today' | 'library' | 'resources'
+type Tab = 'today' | 'path' | 'evidence'
 
 interface Props {
   client: {
@@ -63,12 +63,12 @@ export default function PortalApp({ client }: Props) {
       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     },
     {
-      id: 'library', label: 'Video Library',
-      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+      id: 'path', label: 'The Path',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     },
     {
-      id: 'resources', label: 'Resources',
-      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      id: 'evidence', label: 'My Case',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
     },
   ]
 
@@ -79,10 +79,7 @@ export default function PortalApp({ client }: Props) {
 
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.5)' }}
-        />
+        <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.5)' }} />
       )}
 
       {/* Sidebar */}
@@ -91,17 +88,11 @@ export default function PortalApp({ client }: Props) {
         display: 'flex', flexDirection: 'column', padding: '24px 0',
         position: 'fixed', top: 0, left: sidebarOpen ? 0 : '-220px', bottom: 0, zIndex: 200,
         transition: 'left 0.25s cubic-bezier(0.16,1,0.3,1)'
-      }}
-        className="desktop-sidebar"
-      >
+      }} className="desktop-sidebar">
         {/* Logo */}
         <div style={{ padding: '0 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '16px' }}>
-          <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'white' }}>
-            The Way Back
-          </div>
-          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: '3px', letterSpacing: '0.04em' }}>
-            Pain recovery program
-          </div>
+          <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'white' }}>The Way Back</div>
+          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: '3px', letterSpacing: '0.04em' }}>Pain recovery program</div>
         </div>
 
         {/* Nav */}
@@ -149,14 +140,12 @@ export default function PortalApp({ client }: Props) {
           <div style={{ width: '20px' }} />
         </div>
 
-        {/* Content */}
         <main style={{ flex: 1 }}>
-          {tab === 'today'     && <TodayTab client={client} />}
-          {tab === 'library'   && <LibraryTab />}
-          {tab === 'resources' && <ResourcesTab />}
+          {tab === 'today'    && <TodayTab client={client} />}
+          {tab === 'path'     && <PathTab client={client} />}
+          {tab === 'evidence' && <EvidenceTab client={client} />}
         </main>
 
-        {/* Footer */}
         <footer style={{ background: '#18181b', padding: '24px 48px' }}>
           <div style={{ maxWidth: '960px', margin: '0 auto' }}>
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', marginBottom: '18px' }} />
@@ -173,9 +162,7 @@ export default function PortalApp({ client }: Props) {
       </div>
 
       <style>{`
-        @media (min-width: 768px) {
-          .desktop-sidebar { left: 0 !important; }
-        }
+        @media (min-width: 768px) { .desktop-sidebar { left: 0 !important; } }
         @media (max-width: 767px) {
           .mobile-topbar { display: flex !important; }
           div[style*="marginLeft: 220px"] { margin-left: 0 !important; }

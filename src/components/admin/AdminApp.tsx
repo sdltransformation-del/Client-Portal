@@ -10,6 +10,8 @@ interface Client {
   id: string; name: string; email: string; start_date: string | null; day_number: number | null; notes: string | null; created_at: string; exercise_mode: string | null; unlearn_pain_only: boolean | null
 }
 interface EvidenceEntry { id?: string; text: string; saved: boolean }
+interface EvidenceItem { id: string; side: 'for' | 'against'; text: string; counter_argument: string | null; sort_order: number }
+interface AssignmentNote { day_number: number; note: string }
 interface Assignment {
   id: string; client_id: string; day_number: number; type: string; content_id: string | null; title: string; notes: string | null
 }
@@ -20,7 +22,7 @@ interface JournalEntry {
   id: string; client_id: string; text: string; created_at: string
 }
 
-type AdminTab = 'details' | 'evidence' | 'assignments' | 'activity' | 'progress'
+type AdminTab = 'details' | 'evidence' | 'assignments' | 'activity' | 'progress' | 'case'
 type DayCompletion = { day_number: number; content_done: boolean; assignment_done: boolean }
 
 function timeAgo(iso: string) {
@@ -66,6 +68,16 @@ export default function AdminApp() {
   // Progress
   const [progressData, setProgressData] = useState<DayCompletion[]>([])
 
+  // Evidence items (new per-client evidence sheet)
+  const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([])
+  const [newForText, setNewForText] = useState('')
+  const [newAgainstText, setNewAgainstText] = useState('')
+  const [editingCounter, setEditingCounter] = useState<string | null>(null)
+  const [counterInput, setCounterInput] = useState('')
+
+  // Assignment notes
+  const [assignmentNotes, setAssignmentNotes] = useState<AssignmentNote[]>([])
+
   // Modal
   const [showModal, setShowModal] = useState(false)
   const [newName, setNewName] = useState(''); const [newEmail, setNewEmail] = useState(''); const [newDate, setNewDate] = useState('')
@@ -86,13 +98,15 @@ export default function AdminApp() {
   }
 
   async function selectClient(id: string) {
-    const [{ data: clientData }, { data: evData }, { data: assignData }, { data: actData }, { data: journalData }, { data: progressRows }] = await Promise.all([
+    const [{ data: clientData }, { data: evData }, { data: assignData }, { data: actData }, { data: journalData }, { data: progressRows }, { data: evidenceItemsData }, { data: notesData }] = await Promise.all([
       supabase.from('clients').select('*').eq('id', id).limit(1),
       supabase.from('evidence').select('*').eq('client_id', id).order('created_at', { ascending: true }),
       supabase.from('assignments').select('*').eq('client_id', id).order('day_number', { ascending: true }),
       supabase.from('activity_log').select('*').eq('client_id', id).order('created_at', { ascending: false }),
       supabase.from('journal_entries').select('*').eq('client_id', id).order('created_at', { ascending: false }),
-      supabase.from('daily_completions').select('day_number,content_done,assignment_done').eq('client_id', id).order('day_number', { ascending: true })
+      supabase.from('daily_completions').select('day_number,content_done,assignment_done').eq('client_id', id).order('day_number', { ascending: true }),
+      supabase.from('evidence_items').select('*').eq('client_id', id).order('sort_order', { ascending: true }),
+      supabase.from('assignment_notes').select('day_number,note').eq('client_id', id).order('day_number', { ascending: true })
     ])
     const c = clientData?.[0]; if (!c) return
     setCurrentClient(c)
@@ -105,6 +119,9 @@ export default function AdminApp() {
     setActivityLog(actData || [])
     setJournalEntries(journalData || [])
     setProgressData(progressRows || [])
+    setEvidenceItems((evidenceItemsData as EvidenceItem[]) || [])
+    setAssignmentNotes(notesData || [])
+    setNewForText(''); setNewAgainstText(''); setEditingCounter(null)
     setDirty(false); setEvInput(''); setAdminTab('details'); loadClients()
   }
 
@@ -145,6 +162,28 @@ export default function AdminApp() {
   function removeEvEntry(sectionId: string, idx: number) {
     setPendingEvidence(prev => { const u = [...(prev[sectionId] || [])]; u.splice(idx, 1); return { ...prev, [sectionId]: u } })
     setDirty(true)
+  }
+
+  // Evidence items helpers
+  async function addEvidenceItem(side: 'for' | 'against', text: string) {
+    if (!currentClient || !text.trim()) return
+    const sortOrder = evidenceItems.filter(i => i.side === side).length
+    const { data } = await supabase.from('evidence_items').insert({ client_id: currentClient.id, side, text: text.trim(), sort_order: sortOrder }).select()
+    if (data?.[0]) { setEvidenceItems(prev => [...prev, data[0] as EvidenceItem]); showToast('Added', 'success') }
+    if (side === 'for') setNewForText(''); else setNewAgainstText('')
+  }
+
+  async function deleteEvidenceItem(id: string) {
+    await supabase.from('evidence_items').delete().eq('id', id)
+    setEvidenceItems(prev => prev.filter(i => i.id !== id))
+  }
+
+  async function saveCounter(id: string, text: string) {
+    const val = text.trim() || null
+    await supabase.from('evidence_items').update({ counter_argument: val }).eq('id', id)
+    setEvidenceItems(prev => prev.map(i => i.id === id ? { ...i, counter_argument: val } : i))
+    setEditingCounter(null); setCounterInput('')
+    showToast('Saved', 'success')
   }
 
   // Assignment helpers
@@ -280,9 +319,9 @@ export default function AdminApp() {
 
               {/* Inner tabs */}
               <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'white', border: '1px solid var(--stone-200)', borderRadius: '12px', padding: '4px' }}>
-                {(['details', 'assignments', 'progress', 'activity'] as AdminTab[]).map(t => (
-                  <button key={t} onClick={() => setAdminTab(t)} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 700, padding: '9px 16px', borderRadius: '9px', border: 'none', background: adminTab === t ? 'var(--blue)' : 'none', color: adminTab === t ? 'white' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize' }}>
-                    {t === 'progress' ? `Progress` : t === 'assignments' ? `Assignments (${assignments.length})` : t === 'activity' ? 'Activity' : 'Details'}
+                {(['details', 'case', 'assignments', 'progress', 'activity'] as AdminTab[]).map(t => (
+                  <button key={t} onClick={() => setAdminTab(t)} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, padding: '9px 10px', borderRadius: '9px', border: 'none', background: adminTab === t ? 'var(--blue)' : 'none', color: adminTab === t ? 'white' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize' }}>
+                    {t === 'case' ? 'Evidence' : t === 'progress' ? 'Progress' : t === 'assignments' ? `Assign. (${assignments.length})` : t === 'activity' ? 'Activity' : 'Details'}
                   </button>
                 ))}
               </div>
@@ -346,7 +385,73 @@ export default function AdminApp() {
                 </div>
               )}
 
-              {/* ── EVIDENCE TAB ── */}
+              {/* ── CASE TAB (evidence_items) ── */}
+              {adminTab === 'case' && (() => {
+                const forItems = evidenceItems.filter(i => i.side === 'for')
+                const againstItems = evidenceItems.filter(i => i.side === 'against')
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    {/* FOR column */}
+                    <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '22px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--blue)', borderBottom: '2px solid var(--blue)', paddingBottom: '8px' }}>Why it's brain-generated pain</div>
+                      {forItems.map(item => (
+                        <div key={item.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '9px', padding: '10px 12px' }}>
+                          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--blue)', flexShrink: 0, marginTop: '6px', opacity: 0.5 }} />
+                          <div style={{ flex: 1, fontSize: '0.85rem', color: 'var(--stone-900)', lineHeight: 1.5 }}>{item.text}</div>
+                          <button onClick={() => deleteEvidenceItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--stone-300)', flexShrink: 0, padding: '2px', display: 'flex' }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                          </button>
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', gap: '7px', alignItems: 'flex-start', marginTop: '4px' }}>
+                        <textarea value={newForText} onChange={e => setNewForText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addEvidenceItem('for', newForText) } }} placeholder="Add a reason..." rows={2} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.85rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '9px 11px', resize: 'none', outline: 'none', lineHeight: 1.5 }} />
+                        <button onClick={() => addEvidenceItem('for', newForText)} style={{ fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, padding: '9px 13px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', flexShrink: 0 }}>Add</button>
+                      </div>
+                    </div>
+
+                    {/* AGAINST column */}
+                    <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '22px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--stone-500)', borderBottom: '2px solid var(--stone-200)', paddingBottom: '8px' }}>Why they thought it was structural</div>
+                      {againstItems.map(item => (
+                        <div key={item.id} style={{ background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '9px', padding: '10px 12px' }}>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--stone-300)', flexShrink: 0, marginTop: '6px' }} />
+                            <div style={{ flex: 1, fontSize: '0.85rem', color: 'var(--stone-700)', lineHeight: 1.5, textDecoration: item.counter_argument ? 'line-through' : 'none', opacity: item.counter_argument ? 0.6 : 1 }}>{item.text}</div>
+                            <button onClick={() => deleteEvidenceItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--stone-300)', flexShrink: 0, padding: '2px', display: 'flex' }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                            </button>
+                          </div>
+                          {item.counter_argument && editingCounter !== item.id && (
+                            <div style={{ marginLeft: '14px', marginTop: '8px', background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.15)', borderRadius: '7px', padding: '8px 10px' }}>
+                              <div style={{ fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#f97316', marginBottom: '3px' }}>The Truth</div>
+                              <div style={{ fontSize: '0.82rem', color: 'var(--stone-700)', lineHeight: 1.5 }}>{item.counter_argument}</div>
+                              <button onClick={() => { setEditingCounter(item.id); setCounterInput(item.counter_argument || '') }} style={{ fontFamily: 'inherit', fontSize: '0.7rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 0', display: 'block' }}>Edit</button>
+                            </div>
+                          )}
+                          {editingCounter === item.id && (
+                            <div style={{ marginLeft: '14px', marginTop: '8px', display: 'flex', gap: '6px' }}>
+                              <textarea value={counterInput} onChange={e => setCounterInput(e.target.value)} rows={2} placeholder="The Truth..." style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.82rem', color: 'var(--stone-900)', background: 'white', border: '1px solid var(--stone-200)', borderRadius: '7px', padding: '7px 9px', resize: 'none', outline: 'none', lineHeight: 1.5 }} />
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <button onClick={() => saveCounter(item.id, counterInput)} style={{ fontFamily: 'inherit', fontSize: '0.72rem', fontWeight: 700, padding: '6px 10px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Save</button>
+                                <button onClick={() => { setEditingCounter(null); setCounterInput('') }} style={{ fontFamily: 'inherit', fontSize: '0.72rem', fontWeight: 600, padding: '6px 10px', background: 'var(--stone-100)', color: 'var(--stone-700)', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
+                              </div>
+                            </div>
+                          )}
+                          {!item.counter_argument && editingCounter !== item.id && (
+                            <button onClick={() => { setEditingCounter(item.id); setCounterInput('') }} style={{ marginLeft: '14px', marginTop: '6px', fontFamily: 'inherit', fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', background: 'none', border: '1px dashed var(--stone-300)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer' }}>+ Add "The Truth"</button>
+                          )}
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', gap: '7px', alignItems: 'flex-start', marginTop: '4px' }}>
+                        <textarea value={newAgainstText} onChange={e => setNewAgainstText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addEvidenceItem('against', newAgainstText) } }} placeholder="Add a structural belief..." rows={2} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.85rem', color: 'var(--stone-900)', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '8px', padding: '9px 11px', resize: 'none', outline: 'none', lineHeight: 1.5 }} />
+                        <button onClick={() => addEvidenceItem('against', newAgainstText)} style={{ fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, padding: '9px 13px', background: 'var(--stone-900)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', flexShrink: 0 }}>Add</button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* ── EVIDENCE TAB (legacy) ── */}
               {adminTab === 'evidence' && (
                 <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px' }}>
                   <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '18px' }}>Personal Evidence Sheet</div>
@@ -532,6 +637,21 @@ export default function AdminApp() {
                   </div>
                 )
               })()}
+
+              {/* ── NOTES (shown inside progress tab) ── */}
+              {adminTab === 'progress' && assignmentNotes.length > 0 && (
+                <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px', marginTop: '20px' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '16px' }}>Client notes ({assignmentNotes.length} days)</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {assignmentNotes.map(n => (
+                      <div key={n.day_number} style={{ display: 'flex', gap: '14px', padding: '12px 14px', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '10px' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--blue)', background: 'var(--blue-pale)', padding: '4px 10px', borderRadius: '100px', flexShrink: 0, alignSelf: 'flex-start', whiteSpace: 'nowrap' }}>Day {n.day_number}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--stone-800)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{n.note}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* ── ACTIVITY TAB ── */}
               {adminTab === 'activity' && (
