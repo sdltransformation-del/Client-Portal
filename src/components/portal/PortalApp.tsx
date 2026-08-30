@@ -7,8 +7,9 @@ import CheckInOverlay from './CheckInOverlay'
 import TodayTab from './TodayTab'
 import PathTab from './PathTab'
 import EvidenceTab from './EvidenceTab'
+import CheckinsTab from './CheckinsTab'
 
-type Tab = 'today' | 'path' | 'evidence'
+type Tab = 'today' | 'path' | 'evidence' | 'checkins'
 
 interface Props {
   client: {
@@ -41,6 +42,20 @@ export default function PortalApp({ client }: Props) {
   })
   const [tab, setTab] = useState<Tab>('today')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showCheckinBanner, setShowCheckinBanner] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const startDate = client.start_date
+    if (!startDate) return false
+    const [y, m, d] = startDate.slice(0, 10).split('-').map(Number)
+    const start = new Date(y, m - 1, d)
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const currentDay = Math.max(1, Math.floor((today.getTime() - start.getTime()) / 86400000) + 1)
+    if (currentDay < 3 || currentDay % 3 !== 0) return false
+    const lastShown = Number(localStorage.getItem(`checkin_banner_${client.id}`) || 0)
+    if (lastShown === currentDay) return false
+    localStorage.setItem(`checkin_banner_${client.id}`, String(currentDay))
+    return true
+  })
   const router = useRouter()
   const supabase = createClient()
 
@@ -69,6 +84,10 @@ export default function PortalApp({ client }: Props) {
     {
       id: 'evidence', label: 'My Case',
       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    },
+    {
+      id: 'checkins', label: 'Check-ins',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     },
   ]
 
@@ -141,9 +160,33 @@ export default function PortalApp({ client }: Props) {
         </div>
 
         <main style={{ flex: 1 }}>
+          {tab === 'today' && showCheckinBanner && (
+            <div style={{ maxWidth: '960px', margin: '24px auto 0', padding: '0 40px' }}>
+              <div style={{ background: '#18181b', border: '1.5px solid rgba(249,115,22,0.35)', borderRadius: '14px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(249,115,22,0.15)', border: '1.5px solid rgba(249,115,22,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'white' }}>Time for your 3-day check-in</div>
+                    <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>Share what you've noticed — new evidence, doubts, symptoms, a win.</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button onClick={() => setTab('checkins')} style={{ fontFamily: 'inherit', fontSize: '0.8rem', fontWeight: 700, padding: '8px 16px', background: '#f97316', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+                    Write check-in
+                  </button>
+                  <button onClick={() => setShowCheckinBanner(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: '4px', display: 'flex' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {tab === 'today'    && <TodayTab client={client} />}
           {tab === 'path'     && <PathTab client={client} />}
           {tab === 'evidence' && <EvidenceTab client={client} />}
+          {tab === 'checkins' && <CheckinsTab client={client} />}
         </main>
 
         <footer style={{ background: '#18181b', padding: '24px 48px' }}>

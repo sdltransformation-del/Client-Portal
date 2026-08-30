@@ -12,6 +12,7 @@ interface Client {
 interface EvidenceEntry { id?: string; text: string; saved: boolean }
 interface EvidenceItem { id: string; side: 'for' | 'against'; text: string; counter_argument: string | null; sort_order: number }
 interface AssignmentNote { day_number: number; note: string }
+interface CheckinMessage { id: string; content: string; from_admin: boolean; created_at: string }
 interface Assignment {
   id: string; client_id: string; day_number: number; type: string; content_id: string | null; title: string; notes: string | null
 }
@@ -22,7 +23,7 @@ interface JournalEntry {
   id: string; client_id: string; text: string; created_at: string
 }
 
-type AdminTab = 'details' | 'evidence' | 'assignments' | 'activity' | 'progress' | 'case'
+type AdminTab = 'details' | 'evidence' | 'assignments' | 'activity' | 'progress' | 'case' | 'checkins'
 type DayCompletion = { day_number: number; content_done: boolean; assignment_done: boolean }
 
 function timeAgo(iso: string) {
@@ -78,6 +79,11 @@ export default function AdminApp() {
   // Assignment notes
   const [assignmentNotes, setAssignmentNotes] = useState<AssignmentNote[]>([])
 
+  // Check-ins
+  const [checkinMessages, setCheckinMessages] = useState<CheckinMessage[]>([])
+  const [replyText, setReplyText] = useState('')
+  const [replying, setReplying] = useState(false)
+
   // Modal
   const [showModal, setShowModal] = useState(false)
   const [newName, setNewName] = useState(''); const [newEmail, setNewEmail] = useState(''); const [newDate, setNewDate] = useState('')
@@ -98,7 +104,7 @@ export default function AdminApp() {
   }
 
   async function selectClient(id: string) {
-    const [{ data: clientData }, { data: evData }, { data: assignData }, { data: actData }, { data: journalData }, { data: progressRows }, { data: evidenceItemsData }, { data: notesData }] = await Promise.all([
+    const [{ data: clientData }, { data: evData }, { data: assignData }, { data: actData }, { data: journalData }, { data: progressRows }, { data: evidenceItemsData }, { data: notesData }, { data: checkinsData }] = await Promise.all([
       supabase.from('clients').select('*').eq('id', id).limit(1),
       supabase.from('evidence').select('*').eq('client_id', id).order('created_at', { ascending: true }),
       supabase.from('assignments').select('*').eq('client_id', id).order('day_number', { ascending: true }),
@@ -106,7 +112,8 @@ export default function AdminApp() {
       supabase.from('journal_entries').select('*').eq('client_id', id).order('created_at', { ascending: false }),
       supabase.from('daily_completions').select('day_number,content_done,assignment_done').eq('client_id', id).order('day_number', { ascending: true }),
       supabase.from('evidence_items').select('*').eq('client_id', id).order('sort_order', { ascending: true }),
-      supabase.from('assignment_notes').select('day_number,note').eq('client_id', id).order('day_number', { ascending: true })
+      supabase.from('assignment_notes').select('day_number,note').eq('client_id', id).order('day_number', { ascending: true }),
+      supabase.from('checkin_messages').select('*').eq('client_id', id).order('created_at', { ascending: true })
     ])
     const c = clientData?.[0]; if (!c) return
     setCurrentClient(c)
@@ -121,6 +128,8 @@ export default function AdminApp() {
     setProgressData(progressRows || [])
     setEvidenceItems((evidenceItemsData as EvidenceItem[]) || [])
     setAssignmentNotes(notesData || [])
+    setCheckinMessages((checkinsData as CheckinMessage[]) || [])
+    setReplyText('')
     setNewForText(''); setNewAgainstText(''); setEditingCounter(null)
     setDirty(false); setEvInput(''); setAdminTab('details'); loadClients()
   }
@@ -176,6 +185,16 @@ export default function AdminApp() {
   async function deleteEvidenceItem(id: string) {
     await supabase.from('evidence_items').delete().eq('id', id)
     setEvidenceItems(prev => prev.filter(i => i.id !== id))
+  }
+
+  async function sendReply() {
+    if (!currentClient || !replyText.trim() || replying) return
+    setReplying(true)
+    const { data } = await supabase.from('checkin_messages').insert({ client_id: currentClient.id, content: replyText.trim(), from_admin: true }).select()
+    if (data?.[0]) setCheckinMessages(prev => [...prev, data[0] as CheckinMessage])
+    setReplyText('')
+    setReplying(false)
+    showToast('Reply sent', 'success')
   }
 
   async function saveCounter(id: string, text: string) {
@@ -319,9 +338,9 @@ export default function AdminApp() {
 
               {/* Inner tabs */}
               <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'white', border: '1px solid var(--stone-200)', borderRadius: '12px', padding: '4px' }}>
-                {(['details', 'case', 'assignments', 'progress', 'activity'] as AdminTab[]).map(t => (
-                  <button key={t} onClick={() => setAdminTab(t)} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, padding: '9px 10px', borderRadius: '9px', border: 'none', background: adminTab === t ? 'var(--blue)' : 'none', color: adminTab === t ? 'white' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize' }}>
-                    {t === 'case' ? 'Evidence' : t === 'progress' ? 'Progress' : t === 'assignments' ? `Assign. (${assignments.length})` : t === 'activity' ? 'Activity' : 'Details'}
+                {(['details', 'case', 'checkins', 'assignments', 'progress', 'activity'] as AdminTab[]).map(t => (
+                  <button key={t} onClick={() => setAdminTab(t)} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.73rem', fontWeight: 700, padding: '9px 6px', borderRadius: '9px', border: 'none', background: adminTab === t ? 'var(--blue)' : 'none', color: adminTab === t ? 'white' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize' }}>
+                    {t === 'case' ? 'Evidence' : t === 'checkins' ? `Check-ins (${checkinMessages.filter(m => !m.from_admin).length})` : t === 'progress' ? 'Progress' : t === 'assignments' ? `Assign.` : t === 'activity' ? 'Activity' : 'Details'}
                   </button>
                 ))}
               </div>
@@ -450,6 +469,46 @@ export default function AdminApp() {
                   </div>
                 )
               })()}
+
+              {/* ── CHECKINS TAB ── */}
+              {adminTab === 'checkins' && (
+                <div style={{ maxWidth: '680px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+                    {checkinMessages.length === 0 ? (
+                      <div style={{ background: 'white', border: '1px solid var(--stone-200)', borderRadius: '14px', padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+                        No check-ins yet from this client.
+                      </div>
+                    ) : checkinMessages.map(msg => (
+                      <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.from_admin ? 'flex-end' : 'flex-start' }}>
+                        <div style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '5px' }}>
+                          {msg.from_admin ? 'You (Serge)' : currentClient!.name.split(' ')[0]} · {new Date(msg.created_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} {new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        <div style={{ maxWidth: '88%', background: msg.from_admin ? 'var(--blue)' : 'white', color: msg.from_admin ? 'white' : 'var(--stone-900)', border: msg.from_admin ? 'none' : '1px solid var(--stone-200)', borderRadius: msg.from_admin ? '14px 4px 14px 14px' : '4px 14px 14px 14px', padding: '14px 18px', fontSize: '0.88rem', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                          {msg.content}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Reply box */}
+                  <div style={{ background: 'white', border: '1.5px solid var(--stone-200)', borderRadius: '14px', overflow: 'hidden' }}>
+                    <textarea
+                      value={replyText}
+                      onChange={e => setReplyText(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendReply() }}
+                      placeholder="Write a reply to this client..."
+                      rows={3}
+                      style={{ width: '100%', fontFamily: 'inherit', fontSize: '0.88rem', color: 'var(--stone-900)', border: 'none', padding: '14px 16px', resize: 'none', outline: 'none', lineHeight: 1.6, background: 'transparent' }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderTop: '1px solid var(--stone-100)' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>⌘ + Enter to send</span>
+                      <button onClick={sendReply} disabled={!replyText.trim() || replying} style={{ fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 700, padding: '9px 18px', background: replyText.trim() ? 'var(--blue)' : 'var(--stone-100)', color: replyText.trim() ? 'white' : 'var(--text-muted)', border: 'none', borderRadius: '8px', cursor: replyText.trim() ? 'pointer' : 'not-allowed' }}>
+                        {replying ? 'Sending...' : 'Send reply'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* ── EVIDENCE TAB (legacy) ── */}
               {adminTab === 'evidence' && (
