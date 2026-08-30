@@ -15,8 +15,17 @@ function formatMin(min: number): string {
   return `${m}m`
 }
 
+function getCurrentDay(startDate: string | null): number {
+  if (!startDate) return 1
+  const [y, m, d] = startDate.slice(0, 10).split('-').map(Number)
+  const start = new Date(y, m - 1, d)
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  return Math.max(1, Math.floor((today.getTime() - start.getTime()) / 86400000) + 1)
+}
+
 export default function PathTab({ client }: Props) {
   const supabase = createClient()
+  const currentDay = getCurrentDay(client.start_date)
   const [completions, setCompletions] = useState<Record<number, { content_done: boolean }>>({})
   const [notes, setNotes] = useState<Record<number, string>>({})
   const [selected, setSelected] = useState<number | null>(null)
@@ -45,6 +54,7 @@ export default function PathTab({ client }: Props) {
 
   function isUnlocked(day: number): boolean {
     if (day === 1) return true
+    if (day <= currentDay) return true
     return completions[day - 1]?.content_done === true
   }
 
