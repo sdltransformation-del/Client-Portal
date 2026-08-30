@@ -149,7 +149,7 @@ export default function PortalApp({ client }: Props) {
       </aside>
 
       {/* Main */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft: '220px' }}>
+      <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft: '220px' }}>
         {/* Mobile topbar */}
         <div style={{ display: 'none', position: 'sticky', top: 0, zIndex: 100, background: '#18181b', padding: '12px 20px', alignItems: 'center', justifyContent: 'space-between' }} className="mobile-topbar">
           <button onClick={() => setSidebarOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'white', padding: 0 }}>
@@ -161,7 +161,7 @@ export default function PortalApp({ client }: Props) {
 
         <main style={{ flex: 1 }}>
           {tab === 'today' && showCheckinBanner && (
-            <div style={{ maxWidth: '960px', margin: '24px auto 0', padding: '0 40px' }}>
+            <div className="checkin-banner" style={{ maxWidth: '960px', margin: '24px auto 0', padding: '0 40px' }}>
               <div style={{ background: '#18181b', border: '1.5px solid rgba(249,115,22,0.35)', borderRadius: '14px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(249,115,22,0.15)', border: '1.5px solid rgba(249,115,22,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -208,7 +208,9 @@ export default function PortalApp({ client }: Props) {
         @media (min-width: 768px) { .desktop-sidebar { left: 0 !important; } }
         @media (max-width: 767px) {
           .mobile-topbar { display: flex !important; }
-          div[style*="marginLeft: 220px"] { margin-left: 0 !important; }
+          .main-content { margin-left: 0 !important; }
+          .checkin-banner { margin: 16px 16px 0 !important; padding: 0 !important; }
+          footer { padding: 20px 20px !important; }
         }
       `}</style>
     </div>
