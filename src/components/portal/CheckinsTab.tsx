@@ -24,6 +24,7 @@ export default function CheckinsTab({ client }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -39,9 +40,15 @@ export default function CheckinsTab({ client }: Props) {
   async function send() {
     if (!text.trim() || sending) return
     setSending(true)
-    const { data } = await supabase.from('checkin_messages').insert({ client_id: client.id, content: text.trim(), from_admin: false }).select()
-    if (data?.[0]) setMessages(prev => [...prev, data[0] as Message])
-    setText('')
+    setError(null)
+    const { data, error: err } = await supabase.from('checkin_messages').insert({ client_id: client.id, content: text.trim(), from_admin: false }).select()
+    if (err) {
+      console.error('checkin insert error:', err)
+      setError(err.message)
+    } else if (data?.[0]) {
+      setMessages(prev => [...prev, data[0] as Message])
+      setText('')
+    }
     setSending(false)
   }
 
@@ -120,7 +127,7 @@ export default function CheckinsTab({ client }: Props) {
           style={{ width: '100%', fontFamily: 'inherit', fontSize: '0.9rem', color: DARK, border: 'none', padding: '16px 18px', resize: 'none', outline: 'none', lineHeight: 1.65, background: 'transparent' }}
         />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderTop: '1px solid #f4f4f5' }}>
-          <span style={{ fontSize: '0.72rem', color: '#a1a1aa' }}>⌘ + Enter to send</span>
+          <span style={{ fontSize: '0.72rem', color: error ? '#dc2626' : '#a1a1aa' }}>{error || '⌘ + Enter to send'}</span>
           <button
             onClick={send}
             disabled={!text.trim() || sending}
