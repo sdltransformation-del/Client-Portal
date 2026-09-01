@@ -51,7 +51,7 @@ export default function AdminApp() {
 
   // Details
   const [editName, setEditName] = useState(''); const [editEmail, setEditEmail] = useState('')
-  const [editDate, setEditDate] = useState(''); const [editDay, setEditDay] = useState(1); const [editNotes, setEditNotes] = useState(''); const [editExerciseMode, setEditExerciseMode] = useState('both'); const [editUnlearnPainOnly, setEditUnlearnPainOnly] = useState(false)
+  const [editDate, setEditDate] = useState(''); const [editDay, setEditDay] = useState(1); const [editNotes, setEditNotes] = useState(''); const [editExerciseMode, setEditExerciseMode] = useState('somatic_only'); const [editUnlearnPainOnly, setEditUnlearnPainOnly] = useState(false)
   const [dirty, setDirty] = useState(false)
 
   // Evidence
@@ -137,7 +137,7 @@ export default function AdminApp() {
     ])
     const c = clientData?.[0]; if (!c) return
     setCurrentClient(c)
-    setEditName(c.name); setEditEmail(c.email); setEditDate(c.start_date || ''); setEditDay(c.day_number || 1); setEditNotes(c.notes || ''); setEditExerciseMode(c.exercise_mode || 'both'); setEditUnlearnPainOnly(c.unlearn_pain_only ?? false)
+    setEditName(c.name); setEditEmail(c.email); setEditDate(c.start_date || ''); setEditDay(c.day_number || 1); setEditNotes(c.notes || ''); setEditExerciseMode(c.exercise_mode === 'both' || !c.exercise_mode ? 'somatic_only' : c.exercise_mode); setEditUnlearnPainOnly(c.unlearn_pain_only ?? false)
     const pe: Record<string, EvidenceEntry[]> = {}
     SECTIONS.forEach(s => { pe[s.id] = [] })
     for (const e of evData || []) { if (pe[e.section]) pe[e.section].push({ id: e.id, text: e.content, saved: true }) }
@@ -245,7 +245,7 @@ export default function AdminApp() {
     } else if (newAssignType === 'article') {
       const r = RESOURCES.find(r => r.id === id); if (r) setNewAssignTitle(r.title)
     } else {
-      const labels: Record<string, string> = { journaling: 'Journaling', somatic_tracking: 'Somatic Tracking', reading: 'Reading' }
+      const labels: Record<string, string> = { somatic_tracking: 'Somatic Tracking', reading: 'Reading' }
       setNewAssignTitle(labels[id] || id)
     }
   }
