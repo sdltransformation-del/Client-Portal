@@ -52,10 +52,8 @@ export default function PathTab({ client }: Props) {
       })
   }, [])
 
-  function isUnlocked(day: number): boolean {
-    if (day === 1) return true
-    if (day <= currentDay) return true
-    return completions[day - 1]?.content_done === true
+  function isUnlocked(_day: number): boolean {
+    return true
   }
 
   function nodeStatus(day: number): 'done' | 'current' | 'locked' {
