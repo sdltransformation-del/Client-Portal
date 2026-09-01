@@ -18,9 +18,27 @@ interface Props {
 }
 
 const EXAMPLES = [
-  'I am pain-free, and I move through my life without fear because I now know my brain is the source of my symptoms, and I know my mindset will decide whether I continue to have them or not.',
-  'I am a confident person. I believe in myself, and I use my thoughts and actions every day to prove that to myself.',
-  'I am a positive person. I choose to create positivity in my life by thinking positive thoughts and by chasing a better version of myself every day.',
+  {
+    statement: 'I am pain-free, and I move through my life without fear because I now know my brain is the source of my symptoms, and I know my mindset will decide whether I continue to have them or not.',
+    actions: [
+      'I will read my evidence sheet every morning to remind myself why my symptoms are safe.',
+      'I will stick to my gradual exposure process and return to the things I stopped doing, one step at a time.',
+    ],
+  },
+  {
+    statement: 'I am a confident person. I believe in myself, and I use my thoughts and actions every day to prove that to myself.',
+    actions: [
+      'I will pursue my goals with discipline every single day.',
+      'I will speak and think about myself the way the best version of me already does.',
+    ],
+  },
+  {
+    statement: 'I am a positive person. I choose to create positivity in my life by thinking positive thoughts and by chasing a better version of myself every day.',
+    actions: [
+      'I will start each day by putting positive thoughts in my mind about who I am becoming and feeling grateful for the life I am living.',
+      'I will spend time each day on something that makes me feel good about who I am becoming.',
+    ],
+  },
 ]
 
 const ORANGE = '#f97316'
@@ -123,15 +141,30 @@ export default function IdealSelfTab({ client }: Props) {
       </div>
 
       {/* Examples */}
-      <div style={{ background: DARK, borderRadius: '16px', padding: '22px 24px', marginBottom: '32px' }}>
-        <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '16px' }}>
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#a1a1aa', marginBottom: '14px' }}>
           Examples to get you started
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {EXAMPLES.map((ex, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: ORANGE, flexShrink: 0, marginTop: '9px' }} />
-              <div style={{ fontSize: '0.87rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.65, fontStyle: 'italic' }}>{ex}</div>
+            <div key={i} style={{ background: DARK, borderRadius: '14px', overflow: 'hidden' }}>
+              {/* Statement */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '18px 20px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: ORANGE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'white', lineHeight: 1.6, fontStyle: 'italic' }}>{ex.statement}</div>
+              </div>
+              {/* Actions */}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', padding: '12px 20px 16px 56px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', marginBottom: '4px' }}>Example daily actions</div>
+                {ex.actions.map((a, j) => (
+                  <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: ORANGE, flexShrink: 0, marginTop: '7px', opacity: 0.7 }} />
+                    <div style={{ fontSize: '0.83rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{a}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
