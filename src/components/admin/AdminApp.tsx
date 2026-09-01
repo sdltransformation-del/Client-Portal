@@ -26,6 +26,16 @@ interface JournalEntry {
 type AdminTab = 'details' | 'evidence' | 'assignments' | 'activity' | 'progress' | 'case' | 'checkins'
 type DayCompletion = { day_number: number; content_done: boolean; assignment_done: boolean }
 
+function calcCurrentDay(c: { start_date: string | null; day_number: number | null }): number {
+  if (c.start_date) {
+    const [y, m, d] = c.start_date.slice(0, 10).split('-').map(Number)
+    const start = new Date(y, m - 1, d)
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    return Math.max(1, Math.floor((today.getTime() - start.getTime()) / 86400000) + 1)
+  }
+  return c.day_number || 1
+}
+
 function timeAgo(iso: string) {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000
   if (diff < 60) return 'just now'
@@ -303,7 +313,7 @@ export default function AdminApp() {
                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800, color: 'white', flexShrink: 0 }}>{initials(c.name)}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.85rem', fontWeight: 700, color: currentClient?.id === c.id ? 'var(--blue)' : 'var(--stone-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>Day {c.day_number || 1}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>Day {calcCurrentDay(c)}</div>
                     </div>
                   </div>
                 ))
@@ -328,7 +338,7 @@ export default function AdminApp() {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px', marginBottom: '28px', flexWrap: 'wrap' }}>
                 <div>
                   <div style={{ fontFamily: 'var(--font-instrument)', fontSize: 'clamp(1.6rem,3vw,2.2rem)', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>{currentClient.name}</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Started {startDate(currentClient)} &nbsp;·&nbsp; Day {currentClient.day_number || 1} &nbsp;·&nbsp; {currentClient.email}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Started {startDate(currentClient)} &nbsp;·&nbsp; Day {calcCurrentDay(currentClient)} &nbsp;·&nbsp; {currentClient.email}</div>
                 </div>
                 <button onClick={() => deleteClient(currentClient.id)} style={{ fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 700, padding: '10px 18px', borderRadius: '9px', border: 'none', cursor: 'pointer', background: '#fee2e2', color: 'var(--red)', display: 'inline-flex', alignItems: 'center', gap: '7px' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
