@@ -19,9 +19,6 @@ interface Assignment {
 interface ActivityEntry {
   id: string; client_id: string; type: string; day_number: number | null; content_id: string | null; content_title: string | null; created_at: string
 }
-interface JournalEntry {
-  id: string; client_id: string; text: string; created_at: string
-}
 
 type AdminTab = 'details' | 'evidence' | 'assignments' | 'activity' | 'progress' | 'case' | 'checkins'
 type DayCompletion = { day_number: number; content_done: boolean; assignment_done: boolean }
@@ -71,9 +68,8 @@ export default function AdminApp() {
   const [newAssignNotes, setNewAssignNotes] = useState('')
   const [assignFilter, setAssignFilter] = useState<number | 'all'>('all')
 
-  // Activity & journal
+  // Activity
   const [activityLog, setActivityLog] = useState<ActivityEntry[]>([])
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
   const [activityLoading, setActivityLoading] = useState(false)
 
   // Progress
@@ -129,12 +125,11 @@ export default function AdminApp() {
   }
 
   async function selectClient(id: string) {
-    const [{ data: clientData }, { data: evData }, { data: assignData }, { data: actData }, { data: journalData }, { data: progressRows }, { data: evidenceItemsData }, { data: notesData }, { data: checkinsData }] = await Promise.all([
+    const [{ data: clientData }, { data: evData }, { data: assignData }, { data: actData }, { data: progressRows }, { data: evidenceItemsData }, { data: notesData }, { data: checkinsData }] = await Promise.all([
       supabase.from('clients').select('*').eq('id', id).limit(1),
       supabase.from('evidence').select('*').eq('client_id', id).order('created_at', { ascending: true }),
       supabase.from('assignments').select('*').eq('client_id', id).order('day_number', { ascending: true }),
       supabase.from('activity_log').select('*').eq('client_id', id).order('created_at', { ascending: false }),
-      supabase.from('journal_entries').select('*').eq('client_id', id).order('created_at', { ascending: false }),
       supabase.from('daily_completions').select('day_number,content_done,assignment_done').eq('client_id', id).order('day_number', { ascending: true }),
       supabase.from('evidence_items').select('*').eq('client_id', id).order('sort_order', { ascending: true }),
       supabase.from('assignment_notes').select('day_number,note').eq('client_id', id).order('day_number', { ascending: true }),
@@ -149,7 +144,6 @@ export default function AdminApp() {
     setPendingEvidence(pe)
     setAssignments(assignData || [])
     setActivityLog(actData || [])
-    setJournalEntries(journalData || [])
     setProgressData(progressRows || [])
     setEvidenceItems((evidenceItemsData as EvidenceItem[]) || [])
     setAssignmentNotes(notesData || [])
@@ -238,7 +232,6 @@ export default function AdminApp() {
     if (newAssignType === 'video') return VIDEOS.map(v => ({ id: v.id, label: v.title }))
     if (newAssignType === 'article') return RESOURCES.filter(r => r.type !== 'book').map(r => ({ id: r.id, label: r.title }))
     return [
-      { id: 'journaling', label: 'Journaling' },
       { id: 'somatic_tracking', label: 'Somatic Tracking' },
       { id: 'reading', label: 'Reading' },
     ]
@@ -411,7 +404,6 @@ export default function AdminApp() {
                       <label style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Daily exercises</label>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {[
-                          { val: 'both', label: 'Journaling + Somatic + Visualization', desc: 'Cycles every 3 days — journal, somatic tracking, then visualization' },
                           { val: 'somatic_only', label: 'Somatic + Visualization', desc: 'Alternates every 2 days — somatic tracking, then visualization' },
                           { val: 'none', label: 'None', desc: 'No daily exercise shown' },
                         ].map(opt => (
@@ -774,22 +766,6 @@ export default function AdminApp() {
                     )}
                   </div>
 
-                  {/* Journal entries */}
-                  <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px' }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '18px' }}>Recovery journal ({journalEntries.length})</div>
-                    {journalEntries.length === 0 ? (
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '16px 0' }}>No journal entries yet.</div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {journalEntries.map(j => (
-                          <div key={j.id} style={{ borderLeft: '3px solid rgba(27,79,216,0.15)', paddingLeft: '16px' }}>
-                            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>{new Date(j.created_at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
-                            <div style={{ fontSize: '0.88rem', color: 'var(--stone-900)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{j.text}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
             </>
