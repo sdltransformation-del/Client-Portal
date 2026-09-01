@@ -225,24 +225,9 @@ export default function TodayTab({ client }: Props) {
 
       {/* Daily exercises */}
       {!weekend && (() => {
-        const cycle3 = ((viewDay - 1) % 3) + 1
-        const showJournal = cycle3 === 1
-
         const exercises = [
-          ...(showJournal ? [{
-            num: 1,
-            tag: 'Journaling',
-            time: '20 min',
-            title: 'JournalSpeak',
-            when: 'Anytime — pen and paper',
-            body: <>
-              Start by making three lists if you have not already: <strong>past stressors</strong> (fear, anger, guilt, shame, or hurt from childhood to now), <strong>current stressors</strong> (every person, situation, or worry weighing on you right now), and <strong>personality traits</strong> that add to your stress (perfectionism, people pleasing, a harsh inner critic, difficulty expressing emotions).
-              <br /><br />
-              Then pick one item and write about it for 20 minutes. Write the raw, unfiltered truth. Do not censor. Do not edit. Write what is shameful, scary, or ugly — nobody else will read this. You are getting hidden, unfelt feelings out of your body and onto the page, where they cannot keep generating a pain signal.
-            </>
-          }] : []),
           {
-            num: showJournal ? 2 : 1,
+            num: 1,
             tag: 'Somatic tracking',
             time: '5–10 min',
             title: 'Body scan & sensation check-in',
@@ -254,7 +239,7 @@ export default function TodayTab({ client }: Props) {
             </>
           },
           {
-            num: showJournal ? 3 : 2,
+            num: 2,
             tag: 'Visualization',
             time: '5–10 min',
             title: 'Visualizing your pain-free self',
