@@ -188,47 +188,48 @@ export default function IdealSelfTab({ client }: Props) {
             </div>
           )}
           {statements.map(stmt => (
-            <div key={stmt.id} style={{ background: 'white', border: '1.5px solid rgba(249,115,22,0.25)', borderRadius: '16px', overflow: 'hidden' }}>
-              {/* Statement row */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '18px 20px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: ORANGE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <div key={stmt.id} style={{ borderRadius: '14px', overflow: 'hidden', border: '1.5px solid #18181b' }}>
+              {/* Dark header — statement */}
+              <div style={{ background: DARK, padding: '18px 20px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: ORANGE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
                 </div>
-                <div style={{ flex: 1, fontSize: '0.95rem', fontWeight: 700, color: DARK, lineHeight: 1.6 }}>{stmt.content}</div>
-                <button onClick={() => removeStatement(stmt.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d4d4d8', padding: '2px', display: 'flex', flexShrink: 0 }}>
+                <div style={{ flex: 1, fontSize: '0.93rem', fontWeight: 600, color: 'white', lineHeight: 1.65, fontStyle: 'italic' }}>{stmt.content}</div>
+                <button onClick={() => removeStatement(stmt.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', padding: '2px', display: 'flex', flexShrink: 0 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
               </div>
 
-              {/* Actions for this statement */}
-              <div style={{ borderTop: '1px solid #f4f4f5', background: '#fafafa' }}>
-                <div style={{ padding: '10px 20px 6px 62px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#a1a1aa' }}>
-                  Daily actions for this statement
-                </div>
-
-                {stmt.actions.map(action => (
-                  <div key={action.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 20px 8px 62px' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: ORANGE, flexShrink: 0, marginTop: '7px' }} />
-                    <div style={{ flex: 1, fontSize: '0.86rem', color: '#52525b', lineHeight: 1.55 }}>{action.content}</div>
-                    <button onClick={() => removeAction(stmt.id, action.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d4d4d8', padding: '2px', display: 'flex', flexShrink: 0 }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                    </button>
+              {/* Actions */}
+              <div style={{ background: 'white' }}>
+                {stmt.actions.length > 0 && (
+                  <div style={{ padding: '12px 20px 4px 56px' }}>
+                    <div style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#a1a1aa', marginBottom: '8px' }}>Daily actions</div>
+                    {stmt.actions.map(action => (
+                      <div key={action.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                        <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: ORANGE, flexShrink: 0, marginTop: '7px' }} />
+                        <div style={{ flex: 1, fontSize: '0.86rem', color: '#52525b', lineHeight: 1.55 }}>{action.content}</div>
+                        <button onClick={() => removeAction(stmt.id, action.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d4d4d8', padding: '2px', display: 'flex', flexShrink: 0 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
 
                 {/* Add action input */}
-                <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px 10px 56px', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderTop: stmt.actions.length > 0 ? '1px solid #f4f4f5' : 'none' }}>
                   <input
                     value={actionInputs[stmt.id] || ''}
                     onChange={e => setActionInputs(prev => ({ ...prev, [stmt.id]: e.target.value }))}
                     onKeyDown={e => { if (e.key === 'Enter') addAction(stmt.id) }}
-                    placeholder="Add a daily action..."
-                    style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.84rem', color: DARK, border: '1px solid #e4e4e7', borderRadius: '8px', padding: '8px 12px', outline: 'none', background: 'white' }}
+                    placeholder="Add a daily action for this statement..."
+                    style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.84rem', color: DARK, border: '1px solid #e4e4e7', borderRadius: '8px', padding: '8px 12px', outline: 'none', background: '#fafafa' }}
                   />
                   <button
                     onClick={() => addAction(stmt.id)}
                     disabled={!(actionInputs[stmt.id] || '').trim()}
-                    style={{ fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, padding: '8px 14px', background: (actionInputs[stmt.id] || '').trim() ? ORANGE : '#e4e4e7', color: (actionInputs[stmt.id] || '').trim() ? 'white' : '#a1a1aa', border: 'none', borderRadius: '8px', cursor: (actionInputs[stmt.id] || '').trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', flexShrink: 0 }}
+                    style={{ fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, padding: '8px 14px', background: (actionInputs[stmt.id] || '').trim() ? ORANGE : '#f4f4f5', color: (actionInputs[stmt.id] || '').trim() ? 'white' : '#a1a1aa', border: 'none', borderRadius: '8px', cursor: (actionInputs[stmt.id] || '').trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', flexShrink: 0 }}
                   >
                     Add
                   </button>
