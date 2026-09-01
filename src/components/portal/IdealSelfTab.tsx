@@ -2,6 +2,17 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+interface Action {
+  id: string
+  content: string
+}
+
+interface Statement {
+  id: string
+  content: string
+  actions: Action[]
+}
+
 interface Props {
   client: { id: string; name: string }
 }
@@ -17,30 +28,54 @@ const DARK = '#18181b'
 
 export default function IdealSelfTab({ client }: Props) {
   const supabase = createClient()
-  const [statements, setStatements] = useState<{ id: string; content: string }[]>([])
-  const [actions, setActions] = useState<{ id: string; content: string }[]>([])
+  const [statements, setStatements] = useState<Statement[]>([])
   const [stmtInput, setStmtInput] = useState('')
-  const [actionInput, setActionInput] = useState('')
+  const [actionInputs, setActionInputs] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    Promise.all([
-      supabase.from('ideal_self_statements').select('id,content,sort_order').eq('client_id', client.id).order('sort_order', { ascending: true }),
-      supabase.from('ideal_self_actions').select('id,content,sort_order').eq('client_id', client.id).order('sort_order', { ascending: true }),
-    ]).then(([{ data: stmts }, { data: acts }]) => {
-      if (stmts) setStatements(stmts as { id: string; content: string }[])
-      if (acts) setActions(acts as { id: string; content: string }[])
+    async function load() {
+      const { data: stmts, error: stmtErr } = await supabase
+        .from('ideal_self_statements')
+        .select('id,content,sort_order')
+        .eq('client_id', client.id)
+        .order('sort_order', { ascending: true })
+
+      if (stmtErr) { setError(stmtErr.message); setLoading(false); return }
+
+      const { data: acts, error: actErr } = await supabase
+        .from('ideal_self_actions')
+        .select('id,statement_id,content,sort_order')
+        .eq('client_id', client.id)
+        .order('sort_order', { ascending: true })
+
+      if (actErr) { setError(actErr.message); setLoading(false); return }
+
+      const built: Statement[] = (stmts || []).map(s => ({
+        id: s.id,
+        content: s.content,
+        actions: (acts || []).filter((a: { statement_id: string }) => a.statement_id === s.id),
+      }))
+      setStatements(built)
       setLoading(false)
-    })
+    }
+    load()
   }, [])
 
   async function addStatement() {
     const text = stmtInput.trim()
     if (!text) return
     const full = text.startsWith('I am') || text.startsWith('i am') ? text : `I am ${text}`
-    const { data, error } = await supabase.from('ideal_self_statements').insert({ client_id: client.id, content: full, sort_order: statements.length }).select()
-    if (data?.[0]) setStatements(prev => [...prev, data[0] as { id: string; content: string }])
-    if (!error) setStmtInput('')
+    const { data, error: err } = await supabase
+      .from('ideal_self_statements')
+      .insert({ client_id: client.id, content: full, sort_order: statements.length })
+      .select()
+    if (err) { setError(err.message); return }
+    if (data?.[0]) {
+      setStatements(prev => [...prev, { id: data[0].id, content: full, actions: [] }])
+      setStmtInput('')
+    }
   }
 
   async function removeStatement(id: string) {
@@ -48,17 +83,24 @@ export default function IdealSelfTab({ client }: Props) {
     await supabase.from('ideal_self_statements').delete().eq('id', id)
   }
 
-  async function addAction() {
-    const text = actionInput.trim()
+  async function addAction(statementId: string) {
+    const text = (actionInputs[statementId] || '').trim()
     if (!text) return
-    const { data, error } = await supabase.from('ideal_self_actions').insert({ client_id: client.id, content: text, sort_order: actions.length }).select()
-    if (data?.[0]) setActions(prev => [...prev, data[0] as { id: string; content: string }])
-    if (!error) setActionInput('')
+    const stmt = statements.find(s => s.id === statementId)
+    const { data, error: err } = await supabase
+      .from('ideal_self_actions')
+      .insert({ client_id: client.id, statement_id: statementId, content: text, sort_order: stmt?.actions.length ?? 0 })
+      .select()
+    if (err) { setError(err.message); return }
+    if (data?.[0]) {
+      setStatements(prev => prev.map(s => s.id === statementId ? { ...s, actions: [...s.actions, { id: data[0].id, content: text }] } : s))
+      setActionInputs(prev => ({ ...prev, [statementId]: '' }))
+    }
   }
 
-  async function removeAction(id: string) {
-    setActions(prev => prev.filter(a => a.id !== id))
-    await supabase.from('ideal_self_actions').delete().eq('id', id)
+  async function removeAction(statementId: string, actionId: string) {
+    setStatements(prev => prev.map(s => s.id === statementId ? { ...s, actions: s.actions.filter(a => a.id !== actionId) } : s))
+    await supabase.from('ideal_self_actions').delete().eq('id', actionId)
   }
 
   const firstName = client.name.split(' ')[0]
@@ -89,114 +131,106 @@ export default function IdealSelfTab({ client }: Props) {
           {EXAMPLES.map((ex, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
               <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: ORANGE, flexShrink: 0, marginTop: '9px' }} />
-              <div style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.65, fontStyle: 'italic' }}>{ex}</div>
+              <div style={{ fontSize: '0.87rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.65, fontStyle: 'italic' }}>{ex}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* I AM STATEMENTS */}
-      <div style={{ marginBottom: '36px' }}>
-        <div style={{ background: DARK, borderRadius: '14px 14px 0 0', padding: '16px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '2px' }}>Identity statements</div>
-            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'white' }}>{firstName}&apos;s I Am Statements</div>
-          </div>
+      {/* Error */}
+      {error && (
+        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', fontSize: '0.84rem', color: '#dc2626' }}>
+          {error}
         </div>
+      )}
 
-        <div style={{ background: 'white', border: '1.5px solid #18181b', borderTop: 'none', borderRadius: '0 0 14px 14px', overflow: 'hidden' }}>
-          {loading ? (
-            <div style={{ padding: '24px', fontSize: '0.85rem', color: '#a1a1aa' }}>Loading...</div>
-          ) : statements.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', fontSize: '0.88rem', color: '#a1a1aa' }}>
+      {/* Statements */}
+      {loading ? (
+        <div style={{ fontSize: '0.85rem', color: '#a1a1aa', padding: '16px 0' }}>Loading...</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
+          {statements.length === 0 && (
+            <div style={{ background: 'white', border: '1px dashed #d4d4d8', borderRadius: '14px', padding: '32px', textAlign: 'center', fontSize: '0.88rem', color: '#a1a1aa' }}>
               No statements yet. Add your first one below.
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {statements.map((s, i) => (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '16px 20px', borderTop: i > 0 ? '1px solid #f4f4f5' : 'none' }}>
-                  <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: ORANGE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+          )}
+          {statements.map(stmt => (
+            <div key={stmt.id} style={{ background: 'white', border: '1.5px solid rgba(249,115,22,0.25)', borderRadius: '16px', overflow: 'hidden' }}>
+              {/* Statement row */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '18px 20px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: ORANGE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <div style={{ flex: 1, fontSize: '0.95rem', fontWeight: 700, color: DARK, lineHeight: 1.6 }}>{stmt.content}</div>
+                <button onClick={() => removeStatement(stmt.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d4d4d8', padding: '2px', display: 'flex', flexShrink: 0 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+
+              {/* Actions for this statement */}
+              <div style={{ borderTop: '1px solid #f4f4f5', background: '#fafafa' }}>
+                <div style={{ padding: '10px 20px 6px 62px', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#a1a1aa' }}>
+                  Daily actions for this statement
+                </div>
+
+                {stmt.actions.map(action => (
+                  <div key={action.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 20px 8px 62px' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: ORANGE, flexShrink: 0, marginTop: '7px' }} />
+                    <div style={{ flex: 1, fontSize: '0.86rem', color: '#52525b', lineHeight: 1.55 }}>{action.content}</div>
+                    <button onClick={() => removeAction(stmt.id, action.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d4d4d8', padding: '2px', display: 'flex', flexShrink: 0 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
                   </div>
-                  <div style={{ flex: 1, fontSize: '0.93rem', fontWeight: 600, color: DARK, lineHeight: 1.6 }}>{s.content}</div>
-                  <button onClick={() => removeStatement(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d4d4d8', padding: '2px', display: 'flex', flexShrink: 0 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                ))}
+
+                {/* Add action input */}
+                <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px 10px 56px', gap: '8px' }}>
+                  <input
+                    value={actionInputs[stmt.id] || ''}
+                    onChange={e => setActionInputs(prev => ({ ...prev, [stmt.id]: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter') addAction(stmt.id) }}
+                    placeholder="Add a daily action..."
+                    style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.84rem', color: DARK, border: '1px solid #e4e4e7', borderRadius: '8px', padding: '8px 12px', outline: 'none', background: 'white' }}
+                  />
+                  <button
+                    onClick={() => addAction(stmt.id)}
+                    disabled={!(actionInputs[stmt.id] || '').trim()}
+                    style={{ fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, padding: '8px 14px', background: (actionInputs[stmt.id] || '').trim() ? ORANGE : '#e4e4e7', color: (actionInputs[stmt.id] || '').trim() ? 'white' : '#a1a1aa', border: 'none', borderRadius: '8px', cursor: (actionInputs[stmt.id] || '').trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', flexShrink: 0 }}
+                  >
+                    Add
                   </button>
                 </div>
-              ))}
+              </div>
             </div>
-          )}
+          ))}
+        </div>
+      )}
 
-          {/* Add statement input */}
-          <div style={{ borderTop: '1px solid #f4f4f5', display: 'flex', alignItems: 'center', background: '#fafafa' }}>
-            <div style={{ padding: '0 12px', fontSize: '0.78rem', fontWeight: 800, color: ORANGE, flexShrink: 0 }}>I am</div>
-            <input
-              value={stmtInput}
-              onChange={e => setStmtInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') addStatement() }}
-              placeholder="pain-free and living without fear..."
-              style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.9rem', color: DARK, border: 'none', padding: '14px 8px', outline: 'none', background: 'transparent' }}
-            />
-            <button
-              onClick={addStatement}
-              disabled={!stmtInput.trim()}
-              style={{ fontFamily: 'inherit', fontSize: '0.8rem', fontWeight: 700, padding: '10px 16px', background: stmtInput.trim() ? ORANGE : '#f4f4f5', color: stmtInput.trim() ? 'white' : '#a1a1aa', border: 'none', cursor: stmtInput.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', margin: '6px', borderRadius: '8px', flexShrink: 0 }}
-            >
-              Add
-            </button>
-          </div>
+      {/* Add new statement */}
+      <div style={{ background: 'white', border: '1.5px solid #e4e4e7', borderRadius: '14px', overflow: 'hidden' }}>
+        <div style={{ padding: '8px 14px 0', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: ORANGE }}>
+          New I am statement
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ padding: '0 8px 0 14px', fontSize: '0.82rem', fontWeight: 800, color: ORANGE, flexShrink: 0 }}>I am</div>
+          <input
+            value={stmtInput}
+            onChange={e => setStmtInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') addStatement() }}
+            placeholder="confident and getting stronger every day..."
+            style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.9rem', color: DARK, border: 'none', padding: '12px 8px', outline: 'none', background: 'transparent' }}
+          />
+          <button
+            onClick={addStatement}
+            disabled={!stmtInput.trim()}
+            style={{ fontFamily: 'inherit', fontSize: '0.8rem', fontWeight: 700, padding: '10px 18px', background: stmtInput.trim() ? DARK : '#f4f4f5', color: stmtInput.trim() ? 'white' : '#a1a1aa', border: 'none', cursor: stmtInput.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', margin: '6px', borderRadius: '8px', flexShrink: 0 }}
+          >
+            Add
+          </button>
         </div>
       </div>
-
-      {/* DAILY ACTIONS */}
-      <div>
-        <div style={{ background: DARK, borderRadius: '14px 14px 0 0', padding: '16px 22px' }}>
-          <div style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '2px' }}>Commitments</div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'white' }}>My Daily Actions</div>
-          <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>What will you do each day to become this person?</div>
-        </div>
-
-        <div style={{ background: 'white', border: '1.5px solid #18181b', borderTop: 'none', borderRadius: '0 0 14px 14px', overflow: 'hidden' }}>
-          {loading ? (
-            <div style={{ padding: '24px', fontSize: '0.85rem', color: '#a1a1aa' }}>Loading...</div>
-          ) : actions.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', fontSize: '0.88rem', color: '#a1a1aa' }}>
-              No actions yet. Add something you will commit to daily.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {actions.map((a, i) => (
-                <div key={a.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '16px 20px', borderTop: i > 0 ? '1px solid #f4f4f5' : 'none' }}>
-                  <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#f4f4f5', border: '1.5px solid #e4e4e7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={ORANGE} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-                  </div>
-                  <div style={{ flex: 1, fontSize: '0.93rem', color: DARK, lineHeight: 1.6 }}>{a.content}</div>
-                  <button onClick={() => removeAction(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d4d4d8', padding: '2px', display: 'flex', flexShrink: 0 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Add action input */}
-          <div style={{ borderTop: '1px solid #f4f4f5', display: 'flex', alignItems: 'center', background: '#fafafa' }}>
-            <input
-              value={actionInput}
-              onChange={e => setActionInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') addAction() }}
-              placeholder="I will read my I am statements every morning..."
-              style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.9rem', color: DARK, border: 'none', padding: '14px 16px', outline: 'none', background: 'transparent' }}
-            />
-            <button
-              onClick={addAction}
-              disabled={!actionInput.trim()}
-              style={{ fontFamily: 'inherit', fontSize: '0.8rem', fontWeight: 700, padding: '10px 16px', background: actionInput.trim() ? ORANGE : '#f4f4f5', color: actionInput.trim() ? 'white' : '#a1a1aa', border: 'none', cursor: actionInput.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', margin: '6px', borderRadius: '8px', flexShrink: 0 }}
-            >
-              Add
-            </button>
-          </div>
-        </div>
+      <div style={{ fontSize: '0.72rem', color: '#a1a1aa', marginTop: '8px', paddingLeft: '2px' }}>
+        "I am" is added automatically. Press Enter to add.
       </div>
     </div>
   )
