@@ -48,32 +48,32 @@ export default function RemindersOverlay({ onEnter, unlearnPainOnly }: { onEnter
         </div>
 
         {/* Items */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
           {reminders.map((text, i) => (
             <div
               key={i}
               onClick={() => toggle(i)}
               style={{
-                display: 'flex', alignItems: 'flex-start', gap: '12px',
-                background: checked[i] ? 'rgba(27,79,216,0.2)' : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${checked[i] ? 'rgba(27,79,216,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                borderRadius: '12px', padding: '12px 16px', cursor: 'pointer', transition: 'all 0.2s',
-                userSelect: 'none'
+                display: 'flex', alignItems: 'flex-start', gap: '14px',
+                background: checked[i] ? 'rgba(249,115,22,0.12)' : 'rgba(255,255,255,0.06)',
+                border: `1.5px solid ${checked[i] ? 'rgba(249,115,22,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: '14px', padding: '16px 18px', cursor: 'pointer', transition: 'all 0.2s',
+                userSelect: 'none', boxShadow: checked[i] ? '0 0 0 1px rgba(249,115,22,0.15)' : 'none'
               }}
             >
               <div style={{
-                width: '24px', height: '24px', flexShrink: 0, borderRadius: '7px',
-                border: `1.5px solid ${checked[i] ? 'var(--blue)' : 'rgba(255,255,255,0.25)'}`,
-                background: checked[i] ? 'var(--blue)' : 'transparent',
+                width: '26px', height: '26px', flexShrink: 0, borderRadius: '8px',
+                border: `2px solid ${checked[i] ? '#f97316' : 'rgba(255,255,255,0.3)'}`,
+                background: checked[i] ? '#f97316' : 'transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', marginTop: '1px'
               }}>
                 {checked[i] && (
-                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                    <path d="M2.5 7l3.5 3.5 5.5-7" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2.5 7l3.5 3.5 5.5-7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 )}
               </div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 500, color: checked[i] ? 'rgba(255,255,255,0.5)' : 'white', lineHeight: 1.45, transition: 'color 0.2s' }}>
+              <div style={{ fontSize: '0.92rem', fontWeight: checked[i] ? 400 : 600, color: checked[i] ? 'rgba(255,255,255,0.45)' : 'white', lineHeight: 1.5, transition: 'all 0.2s', textDecoration: checked[i] ? 'line-through' : 'none', textDecorationColor: 'rgba(255,255,255,0.3)' }}>
                 {text}
               </div>
             </div>

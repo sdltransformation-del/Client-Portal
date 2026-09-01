@@ -108,9 +108,24 @@ export default function AdminApp() {
     else setPwdError(true)
   }
 
+  const [unansweredIds, setUnansweredIds] = useState<Set<string>>(new Set())
+
   async function loadClients() {
     const { data } = await supabase.from('clients').select('*').order('created_at', { ascending: false })
     setClients(data || [])
+    // Find clients whose last message is from the client (not admin)
+    const { data: msgs } = await supabase.from('checkin_messages').select('client_id,from_admin,created_at').order('created_at', { ascending: false })
+    if (msgs) {
+      const seen = new Set<string>()
+      const unans = new Set<string>()
+      for (const m of msgs) {
+        if (!seen.has(m.client_id)) {
+          seen.add(m.client_id)
+          if (!m.from_admin) unans.add(m.client_id)
+        }
+      }
+      setUnansweredIds(unans)
+    }
   }
 
   async function selectClient(id: string) {
@@ -201,7 +216,10 @@ export default function AdminApp() {
     if (!currentClient || !replyText.trim() || replying) return
     setReplying(true)
     const { data } = await supabase.from('checkin_messages').insert({ client_id: currentClient.id, content: replyText.trim(), from_admin: true }).select()
-    if (data?.[0]) setCheckinMessages(prev => [...prev, data[0] as CheckinMessage])
+    if (data?.[0]) {
+      setCheckinMessages(prev => [...prev, data[0] as CheckinMessage])
+      setUnansweredIds(prev => { const n = new Set(prev); n.delete(currentClient.id); return n })
+    }
     setReplyText('')
     setReplying(false)
     showToast('Reply sent', 'success')
@@ -309,11 +327,14 @@ export default function AdminApp() {
               {clients.length === 0
                 ? <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', padding: '8px', textAlign: 'center' }}>No clients yet</div>
                 : clients.map(c => (
-                  <div key={c.id} onClick={() => selectClient(c.id)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '9px', cursor: 'pointer', transition: 'all 0.15s', border: `1px solid ${currentClient?.id === c.id ? 'rgba(27,79,216,0.2)' : 'transparent'}`, background: currentClient?.id === c.id ? 'var(--blue-pale)' : 'transparent' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800, color: 'white', flexShrink: 0 }}>{initials(c.name)}</div>
+                  <div key={c.id} onClick={() => selectClient(c.id)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '9px', cursor: 'pointer', transition: 'all 0.15s', border: `1px solid ${currentClient?.id === c.id ? 'rgba(249,115,22,0.2)' : unansweredIds.has(c.id) ? 'rgba(249,115,22,0.35)' : 'transparent'}`, background: currentClient?.id === c.id ? 'var(--blue-pale)' : unansweredIds.has(c.id) ? 'rgba(249,115,22,0.06)' : 'transparent' }}>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 800, color: 'white' }}>{initials(c.name)}</div>
+                      {unansweredIds.has(c.id) && <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '10px', height: '10px', borderRadius: '50%', background: '#f97316', border: '2px solid white' }} />}
+                    </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.85rem', fontWeight: 700, color: currentClient?.id === c.id ? 'var(--blue)' : 'var(--stone-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>Day {calcCurrentDay(c)}</div>
+                      <div style={{ fontSize: '0.7rem', color: unansweredIds.has(c.id) ? '#f97316' : 'var(--text-muted)', fontWeight: unansweredIds.has(c.id) ? 700 : 500 }}>{unansweredIds.has(c.id) ? '● New message' : `Day ${calcCurrentDay(c)}`}</div>
                     </div>
                   </div>
                 ))
