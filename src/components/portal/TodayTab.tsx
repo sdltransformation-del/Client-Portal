@@ -223,75 +223,93 @@ export default function TodayTab({ client }: Props) {
         />
       )}
 
-      {/* Daily exercise */}
+      {/* Daily exercises */}
       {!weekend && (() => {
         const cycle3 = ((viewDay - 1) % 3) + 1
         const showJournal = cycle3 === 1
-        const showSomatic = true
-        const showVisualization = true
+
+        const exercises = [
+          ...(showJournal ? [{
+            num: 1,
+            tag: 'Journaling',
+            time: '20 min',
+            title: 'JournalSpeak',
+            when: 'Anytime — pen and paper',
+            body: <>
+              Start by making three lists if you have not already: <strong>past stressors</strong> (fear, anger, guilt, shame, or hurt from childhood to now), <strong>current stressors</strong> (every person, situation, or worry weighing on you right now), and <strong>personality traits</strong> that add to your stress (perfectionism, people pleasing, a harsh inner critic, difficulty expressing emotions).
+              <br /><br />
+              Then pick one item and write about it for 20 minutes. Write the raw, unfiltered truth. Do not censor. Do not edit. Write what is shameful, scary, or ugly — nobody else will read this. You are getting hidden, unfelt feelings out of your body and onto the page, where they cannot keep generating a pain signal.
+            </>
+          }] : []),
+          {
+            num: showJournal ? 2 : 1,
+            tag: 'Somatic tracking',
+            time: '5–10 min',
+            title: 'Body scan & sensation check-in',
+            when: 'Morning or midday — anywhere quiet',
+            body: <>
+              Close your eyes, slow your breath, and bring your attention to the dominant physical sensation in your body right now. Breathe into it. Give it space. You are not trying to get rid of it — just watch it with curiosity. Is it a tightness, a warmth, a pulsing, a tingling? Notice without judgment.
+              <br /><br />
+              This sensation is completely safe. As you observe it without fear, you are sending your brain the message that there is no danger — and building the neural pathways that end the pain cycle.
+            </>
+          },
+          {
+            num: showJournal ? 3 : 2,
+            tag: 'Visualization',
+            time: '5–10 min',
+            title: 'Visualizing your pain-free self',
+            when: 'In bed — just before sleep',
+            body: <>
+              Let your body settle, close your eyes, and take three slow deep breaths. Bring to mind an image of yourself completely free of pain — this version of you, now, living a normal day. See yourself moving freely. Feel the ease of a body doing exactly what it was built to do, without hesitation, without fear.
+              <br /><br />
+              Hold that image gently as you drift off. When you hold it with enough clarity and emotional truth, you are sending your nervous system a real signal: this pain-free state is familiar, it is possible, it is you.
+            </>
+          },
+        ]
 
         return (
-          <div style={{ marginTop: '20px' }}>
-            <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>
-              Today's exercises
+          <div style={{ marginTop: '32px' }}>
+            {/* Section header */}
+            <div style={{ background: '#18181b', borderRadius: '16px 16px 0 0', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '3px' }}>Every single day</div>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'white' }}>Daily Exercises</div>
+              </div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.08)', padding: '5px 12px', borderRadius: '100px' }}>
+                {exercises.length} exercise{exercises.length > 1 ? 's' : ''} today
+              </div>
             </div>
 
-            {showJournal && (
-              <div style={{ background: 'white', border: '1px solid rgba(249,115,22,0.12)', borderRadius: '16px', padding: '24px 26px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Journaling</div>
-                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(249,115,22,0.1)', color: 'var(--blue)' }}>20 min</span>
+            {/* Exercise cards */}
+            <div style={{ background: 'white', border: '1.5px solid #18181b', borderTop: 'none', borderRadius: '0 0 16px 16px', overflow: 'hidden' }}>
+              {exercises.map((ex, i) => (
+                <div key={ex.tag} style={{ padding: '22px 24px', borderTop: i > 0 ? '1px solid #f4f4f5' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                    {/* Number circle */}
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 800, fontSize: '0.9rem', color: 'white', marginTop: '2px' }}>
+                      {ex.num}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#f97316' }}>{ex.tag}</span>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 600, padding: '2px 9px', borderRadius: '100px', background: '#f4f4f5', color: '#71717a' }}>{ex.time}</span>
+                      </div>
+                      <div style={{ fontSize: '1rem', fontWeight: 700, color: '#18181b', lineHeight: 1.3, marginBottom: '4px' }}>{ex.title}</div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#f97316', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        {ex.when}
+                      </div>
+                      <div style={{ fontSize: '0.87rem', color: '#52525b', lineHeight: 1.75 }}>{ex.body}</div>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>JournalSpeak</div>
-                <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7 }}>
-                  Do this on paper. Start by making three lists if you have not already: <strong>past stressors</strong> (anything from childhood to now that caused fear, anger, guilt, shame, or hurt: neglect, loss, difficult relationships, career stress, anything that meant something to you even if no one else would understand it), <strong>current stressors</strong> (every person, situation, or worry that is weighing on you right now: family, money, relationships, your pain and what it has taken from you), and <strong>personality traits</strong> that add to your stress (perfectionism, people pleasing, a harsh inner critic, difficulty expressing emotions, putting everyone else first).
-                  <br /><br />
-                  Then pick one item from any of those lists and write about it for 20 minutes. Do not overthink where to start. Just pick one and go. If you go off on a tangent, follow it. The point is to write the raw, unfiltered truth about how you feel. Do not censor yourself. Do not edit. Write what is shameful, scary, or ugly. Nobody else will read this. Destroy it after if you want to. Think of it as word vomit: you are getting hidden, unfelt feelings out of your body and onto the page, where they cannot keep generating a pain signal.
-                  <br /><br />
-                  As you write, stay aware of what you are feeling. Notice what comes up in your body. Let the emotions surface. If nothing comes right away, that is fine. Stay with it. The more you do this, the more your brain learns that it is safe to feel these things.
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
 
-            {showSomatic && (
-              <div style={{ background: 'white', border: '1px solid rgba(249,115,22,0.12)', borderRadius: '16px', padding: '24px 26px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Somatic tracking</div>
-                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(249,115,22,0.1)', color: 'var(--blue)' }}>5–10 min</span>
-                </div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Body scan and sensation check-in</div>
-                <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7 }}>
-                  Close your eyes and slow your breath down. Breathe in a few times to center yourself, letting your focus settle on the breath coming in and out. Once you feel grounded, bring your attention to the dominant physical sensation in your body right now. It might be in your back, your chest, your arms, or somewhere else entirely. Just let your attention go there. If you feel something in more than one place, choose one and stay with it.
-                  <br /><br />
-                  Now focus on the sensation itself. Breathe into it. Give it a little air, a little space. When a sensation is unpleasant, the instinct is to distract yourself or look away. Do the opposite. Just watch it. Notice it. You are not trying to get rid of it, not trying to change it, not trying to do anything at all. You are simply getting to know it. As you breathe and attend to it, just gather information. Is it pleasant or unpleasant? Widespread or localized? Is it a tightness, a warmth, a pulsing, a tingling? One answer is not better than another. You are just noticing. You are just paying attention.
-                  <br /><br />
-                  This sensation is completely safe. It is not dangerous. Your brain is generating it, and right now you are learning to observe it without fear, without judgment, without any goal beyond watching. As you pay attention this way, you are sending your brain a message that this sensation is safe. You are building the neural pathways to feel it without panic. Just be curious. Notice what happens as you attend to it. Does it intensify? Does it shift? Does it stay exactly the same? Whatever it does is fine. You are outcome independent. You are just watching the show. Think of it like lying back in a field watching clouds pass, just noticing the shapes they make, not needing them to be anything different.
-                </div>
-              </div>
-            )}
-
-            {showVisualization && (
-              <div style={{ background: 'white', border: '1px solid rgba(249,115,22,0.12)', borderRadius: '16px', padding: '24px 26px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--blue)' }}>Visualization</div>
-                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'rgba(249,115,22,0.1)', color: 'var(--blue)' }}>5–10 min</span>
-                </div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)', lineHeight: 1.35, marginBottom: '10px' }}>Visualizing your pain free self</div>
-                <div style={{ fontSize: '0.88rem', color: 'var(--stone-700)', lineHeight: 1.7 }}>
-                  Do this one in bed, just before you fall asleep. Let your body settle into the mattress, close your eyes, and take three slow deep breaths. You are not trying to force anything. You are simply creating space before you drift off.
-                  <br /><br />
-                  Now bring to mind an image of yourself completely free of pain. Not a future version of yourself. This version, now, living a normal day without the weight of the symptom. See yourself moving freely. Maybe you are walking without thinking about it, bending down to pick something up, sitting comfortably through a meal. If you are an athlete, see yourself performing at full capacity. Feel the movement, the effort, the ease of a body doing exactly what it was built to do, without hesitation, without fear, without any part of your attention going to the symptom. Let the scene be specific to your life. Choose a moment that matters to you.
-                  <br /><br />
-                  Hold that image gently. Notice how that version of you carries themselves. Notice the absence of fear in their body, the absence of bracing, the absence of scanning for the next flare. When you hold this image with enough clarity and enough emotional truth, you are sending your nervous system a real signal. You are showing your brain that this is a possible state. You are making it more familiar.
-                  <br /><br />
-                  Stay with this image as you fall asleep. If doubt arises, let it pass like a thought and return to the image. The goal is not to convince yourself of anything. The goal is simply to let your nervous system spend the last moments of your day in a calm, pain free state.
-                </div>
-              </div>
-            )}
             <CheckButton
               field="assignment_done"
-              labelUndone="Mark assignments as done"
-              labelDone="Assignments done ✓"
+              labelUndone="Mark exercises as done"
+              labelDone="Exercises done ✓"
             />
           </div>
         )
