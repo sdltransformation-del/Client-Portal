@@ -31,9 +31,8 @@ function dateForDay(startDate: string, dayNumber: number): Date {
   return d
 }
 
-function isWeekend(date: Date): boolean {
-  const dow = date.getDay()
-  return dow === 0 || dow === 6
+function isWeekend(_date: Date): boolean {
+  return false
 }
 
 function formatDate(date: Date): string {
