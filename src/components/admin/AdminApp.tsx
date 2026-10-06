@@ -20,7 +20,10 @@ interface ActivityEntry {
   id: string; client_id: string; type: string; day_number: number | null; content_id: string | null; content_title: string | null; created_at: string
 }
 
-type AdminTab = 'details' | 'evidence' | 'assignments' | 'activity' | 'progress' | 'case' | 'checkins'
+type AdminTab = 'details' | 'evidence' | 'assignments' | 'activity' | 'progress' | 'case' | 'checkins' | 'workout'
+interface WorkoutPlan { id: string; name: string; description: string | null }
+interface WorkoutItem { id: string; name: string; sort_order: number; exercises: ExerciseItem[] }
+interface ExerciseItem { id: string; name: string; sets: string | null; reps: string | null; duration: string | null; notes: string | null; sort_order: number }
 type DayCompletion = { day_number: number; content_done: boolean; assignment_done: boolean }
 
 function calcCurrentDay(c: { start_date: string | null; day_number: number | null }): number {
@@ -90,6 +93,13 @@ export default function AdminApp() {
   const [replyText, setReplyText] = useState('')
   const [replying, setReplying] = useState(false)
 
+  // Workout plan
+  const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null)
+  const [adminWorkouts, setAdminWorkouts] = useState<WorkoutItem[]>([])
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiGenerating, setAiGenerating] = useState(false)
+  const [aiError, setAiError] = useState('')
+
   // Modal
   const [showModal, setShowModal] = useState(false)
   const [newName, setNewName] = useState(''); const [newEmail, setNewEmail] = useState(''); const [newDate, setNewDate] = useState('')
@@ -151,6 +161,53 @@ export default function AdminApp() {
     setReplyText('')
     setNewForText(''); setNewAgainstText(''); setEditingCounter(null)
     setDirty(false); setEvInput(''); setAdminTab('details'); loadClients()
+    loadWorkoutPlan(id)
+  }
+
+  async function loadWorkoutPlan(clientId: string) {
+    const { data: planData } = await supabase.from('activity_plans').select('id,name,description').eq('client_id', clientId).order('created_at', { ascending: false }).limit(1)
+    if (!planData?.[0]) { setWorkoutPlan(null); setAdminWorkouts([]); return }
+    const plan = planData[0]
+    setWorkoutPlan(plan)
+    const { data: wData } = await supabase.from('activity_workouts').select('*').eq('plan_id', plan.id).order('sort_order', { ascending: true })
+    if (!wData?.length) { setAdminWorkouts([]); return }
+    const { data: eData } = await supabase.from('activity_exercises').select('*').in('workout_id', wData.map(w => w.id)).order('sort_order', { ascending: true })
+    setAdminWorkouts(wData.map(w => ({ ...w, exercises: (eData || []).filter((e: ExerciseItem & { workout_id: string }) => e.workout_id === w.id) })))
+  }
+
+  async function generatePlan() {
+    if (!currentClient || !aiPrompt.trim()) return
+    setAiGenerating(true); setAiError('')
+    try {
+      const res = await fetch('/api/generate-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: aiPrompt, clientName: currentClient.name }) })
+      const json = await res.json()
+      if (!res.ok || json.error) { setAiError(json.error || 'Failed'); setAiGenerating(false); return }
+      await savePlan(json.planName, json.description, json.workouts)
+      setAiPrompt('')
+    } catch (e) { setAiError(String(e)) }
+    setAiGenerating(false)
+  }
+
+  async function savePlan(name: string, description: string, workouts: Array<{ name: string; exercises: Array<{ name: string; sets: string; reps: string; duration: string; notes: string }> }>) {
+    if (!currentClient) return
+    // Delete old plan
+    if (workoutPlan) {
+      await supabase.from('activity_plans').delete().eq('id', workoutPlan.id)
+    }
+    const { data: planData } = await supabase.from('activity_plans').insert({ client_id: currentClient.id, name, description }).select()
+    if (!planData?.[0]) return
+    const planId = planData[0].id
+    for (let i = 0; i < workouts.length; i++) {
+      const w = workouts[i]
+      const { data: wData } = await supabase.from('activity_workouts').insert({ plan_id: planId, name: w.name, sort_order: i }).select()
+      if (!wData?.[0]) continue
+      const wId = wData[0].id
+      for (let j = 0; j < w.exercises.length; j++) {
+        const ex = w.exercises[j]
+        await supabase.from('activity_exercises').insert({ workout_id: wId, name: ex.name, sets: ex.sets || null, reps: ex.reps || null, duration: ex.duration || null, notes: ex.notes || null, sort_order: j })
+      }
+    }
+    await loadWorkoutPlan(currentClient.id)
   }
 
   async function saveClient() {
@@ -362,9 +419,9 @@ export default function AdminApp() {
 
               {/* Inner tabs */}
               <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'white', border: '1px solid var(--stone-200)', borderRadius: '12px', padding: '4px' }}>
-                {(['details', 'case', 'checkins', 'assignments', 'progress', 'activity'] as AdminTab[]).map(t => (
+                {(['details', 'case', 'checkins', 'assignments', 'progress', 'activity', 'workout'] as AdminTab[]).map(t => (
                   <button key={t} onClick={() => setAdminTab(t)} style={{ flex: 1, fontFamily: 'inherit', fontSize: '0.73rem', fontWeight: 700, padding: '9px 6px', borderRadius: '9px', border: 'none', background: adminTab === t ? 'var(--blue)' : 'none', color: adminTab === t ? 'white' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize' }}>
-                    {t === 'case' ? 'Evidence' : t === 'checkins' ? `Check-ins (${checkinMessages.filter(m => !m.from_admin).length})` : t === 'progress' ? 'Progress' : t === 'assignments' ? `Assign.` : t === 'activity' ? 'Activity' : 'Details'}
+                    {t === 'case' ? 'Evidence' : t === 'checkins' ? `Check-ins (${checkinMessages.filter(m => !m.from_admin).length})` : t === 'progress' ? 'Progress' : t === 'assignments' ? `Assign.` : t === 'activity' ? 'Activity' : t === 'workout' ? 'Workout' : 'Details'}
                   </button>
                 ))}
               </div>
@@ -732,6 +789,84 @@ export default function AdminApp() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* ── WORKOUT PLAN TAB ── */}
+              {adminTab === 'workout' && (
+                <div>
+                  {/* AI Generator */}
+                  <div style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '14px' }}>Generate plan with AI</div>
+                    <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px', lineHeight: 1.6 }}>Describe the workout plan and AI will generate a structured program. This will replace the current plan.</p>
+                    <textarea
+                      value={aiPrompt}
+                      onChange={e => setAiPrompt(e.target.value)}
+                      placeholder="e.g. Bodyweight back strength program, alternating Workout A and B. A: Squats, Pushups, Superman, Glute Bridge, Side Plank. B: Lunges, Pushups, Single-Leg RDL, Jefferson Curl, Front Plank. 3 sets of 10 reps each, 8 weeks."
+                      rows={4}
+                      style={{ width: '100%', fontFamily: 'inherit', fontSize: '0.86rem', border: '1px solid var(--stone-200)', borderRadius: '10px', padding: '12px', outline: 'none', resize: 'vertical', color: 'var(--stone-900)', boxSizing: 'border-box' }}
+                    />
+                    {aiError && <div style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '8px' }}>{aiError}</div>}
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '12px', alignItems: 'center' }}>
+                      <button
+                        onClick={generatePlan}
+                        disabled={aiGenerating || !aiPrompt.trim()}
+                        style={{ fontFamily: 'inherit', fontSize: '0.82rem', fontWeight: 700, padding: '10px 20px', background: aiGenerating || !aiPrompt.trim() ? 'var(--stone-200)' : 'var(--blue)', color: aiGenerating || !aiPrompt.trim() ? 'var(--text-muted)' : 'white', border: 'none', borderRadius: '9px', cursor: aiGenerating || !aiPrompt.trim() ? 'not-allowed' : 'pointer' }}
+                      >
+                        {aiGenerating ? 'Generating...' : 'Generate plan'}
+                      </button>
+                      <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Requires ANTHROPIC_API_KEY in .env.local</span>
+                    </div>
+                  </div>
+
+                  {/* Current plan */}
+                  {workoutPlan ? (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                        <div>
+                          <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--stone-900)' }}>{workoutPlan.name}</div>
+                          {workoutPlan.description && <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: '4px' }}>{workoutPlan.description}</div>}
+                        </div>
+                        <button
+                          onClick={async () => { if (!confirm('Delete this plan?')) return; await supabase.from('activity_plans').delete().eq('id', workoutPlan.id); setWorkoutPlan(null); setAdminWorkouts([]) }}
+                          style={{ fontFamily: 'inherit', fontSize: '0.78rem', fontWeight: 700, padding: '8px 14px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                        >
+                          Delete plan
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {adminWorkouts.map(w => (
+                          <div key={w.id} style={{ background: 'white', border: '1px solid rgba(27,79,216,0.08)', borderRadius: '14px', overflow: 'hidden' }}>
+                            <div style={{ background: 'var(--stone-50)', padding: '14px 20px', fontWeight: 700, fontSize: '0.9rem', color: 'var(--stone-900)', borderBottom: '1px solid var(--stone-100)' }}>{w.name}</div>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                              <thead>
+                                <tr style={{ borderBottom: '1px solid var(--stone-100)' }}>
+                                  {['Exercise', 'Sets', 'Reps', 'Duration', 'Notes'].map(h => (
+                                    <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {w.exercises.map((ex, i) => (
+                                  <tr key={ex.id} style={{ borderBottom: i < w.exercises.length - 1 ? '1px solid var(--stone-50)' : 'none' }}>
+                                    <td style={{ padding: '10px 16px', fontSize: '0.86rem', fontWeight: 600, color: 'var(--stone-900)' }}>{ex.name}</td>
+                                    <td style={{ padding: '10px 16px', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>{ex.sets || '—'}</td>
+                                    <td style={{ padding: '10px 16px', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>{ex.reps || '—'}</td>
+                                    <td style={{ padding: '10px 16px', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>{ex.duration || '—'}</td>
+                                    <td style={{ padding: '10px 16px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{ex.notes || '—'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ background: 'white', border: '1px dashed var(--stone-200)', borderRadius: '14px', padding: '40px', textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+                      No workout plan yet. Generate one above or type a description.
+                    </div>
+                  )}
                 </div>
               )}
 

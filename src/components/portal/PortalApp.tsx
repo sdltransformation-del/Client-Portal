@@ -9,8 +9,9 @@ import PathTab from './PathTab'
 import EvidenceTab from './EvidenceTab'
 import CheckinsTab from './CheckinsTab'
 import IdealSelfTab from './IdealSelfTab'
+import ActivityTab from './ActivityTab'
 
-type Tab = 'today' | 'path' | 'evidence' | 'checkins' | 'idealself'
+type Tab = 'today' | 'path' | 'evidence' | 'checkins' | 'idealself' | 'activity'
 
 interface Props {
   client: {
@@ -93,6 +94,10 @@ export default function PortalApp({ client }: Props) {
     {
       id: 'idealself', label: 'My Ideal Self',
       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    },
+    {
+      id: 'activity', label: 'Activity',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     },
   ]
 
@@ -193,6 +198,7 @@ export default function PortalApp({ client }: Props) {
           {tab === 'evidence' && <EvidenceTab client={client} />}
           {tab === 'checkins' && <CheckinsTab client={client} />}
           {tab === 'idealself' && <IdealSelfTab client={client} />}
+          {tab === 'activity'  && <ActivityTab client={client} />}
         </main>
 
         <footer style={{ background: '#18181b', padding: '24px 48px' }}>
