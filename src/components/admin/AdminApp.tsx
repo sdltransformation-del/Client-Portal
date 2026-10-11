@@ -51,6 +51,7 @@ export default function AdminApp() {
   const [clients, setClients] = useState<Client[]>([])
   const [currentClient, setCurrentClient] = useState<Client | null>(null)
   const [adminTab, setAdminTab] = useState<AdminTab>('details')
+  const [completedToday, setCompletedToday] = useState<Set<string>>(new Set())
 
   // Details
   const [editName, setEditName] = useState(''); const [editEmail, setEditEmail] = useState('')
@@ -117,20 +118,32 @@ export default function AdminApp() {
   const [unansweredIds, setUnansweredIds] = useState<Set<string>>(new Set())
 
   async function loadClients() {
-    const { data } = await supabase.from('clients').select('*').order('created_at', { ascending: false })
-    setClients(data || [])
-    // Find clients whose last message is from the client (not admin)
-    const { data: msgs } = await supabase.from('checkin_messages').select('client_id,from_admin,created_at').order('created_at', { ascending: false })
+    const [{ data }, { data: msgs }, { data: completions }] = await Promise.all([
+      supabase.from('clients').select('*').order('created_at', { ascending: false }),
+      supabase.from('checkin_messages').select('client_id,from_admin,created_at').order('created_at', { ascending: false }),
+      supabase.from('daily_completions').select('client_id,day_number,content_done'),
+    ])
+    const allClients: Client[] = data || []
+    setClients(allClients)
+
     if (msgs) {
       const seen = new Set<string>()
       const unans = new Set<string>()
       for (const m of msgs) {
-        if (!seen.has(m.client_id)) {
-          seen.add(m.client_id)
-          if (!m.from_admin) unans.add(m.client_id)
-        }
+        if (!seen.has(m.client_id)) { seen.add(m.client_id); if (!m.from_admin) unans.add(m.client_id) }
       }
       setUnansweredIds(unans)
+    }
+
+    if (completions) {
+      const done = new Set<string>()
+      for (const c of allClients) {
+        const day = calcCurrentDay(c)
+        if (completions.some((r: { client_id: string; day_number: number; content_done: boolean }) => r.client_id === c.id && r.day_number === day && r.content_done)) {
+          done.add(c.id)
+        }
+      }
+      setCompletedToday(done)
     }
   }
 
@@ -396,12 +409,62 @@ export default function AdminApp() {
         {/* Main */}
         <main style={{ marginLeft: '280px', padding: '36px 40px' }}>
           {!currentClient ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center', color: 'var(--text-muted)' }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ opacity: 0.2, marginBottom: '16px' }}>
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-              </svg>
-              <h2 style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.4rem', fontWeight: 400, color: 'var(--stone-700)', marginBottom: '8px' }}>Select or create a client</h2>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', maxWidth: '320px', lineHeight: 1.6 }}>Choose a client from the sidebar to view and edit their profile, evidence, and assignments.</p>
+            <div>
+              <div style={{ marginBottom: '28px' }}>
+                <div style={{ fontFamily: 'var(--font-instrument)', fontSize: '1.8rem', fontWeight: 400, color: 'var(--stone-900)', marginBottom: '4px' }}>Overview</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{clients.length} clients &nbsp;·&nbsp; {unansweredIds.size} unread &nbsp;·&nbsp; {clients.filter(c => !completedToday.has(c.id) && c.start_date).length} haven't done today's assignment</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  ...clients.filter(c => unansweredIds.has(c.id)),
+                  ...clients.filter(c => !unansweredIds.has(c.id) && !completedToday.has(c.id) && c.start_date),
+                  ...clients.filter(c => !unansweredIds.has(c.id) && completedToday.has(c.id)),
+                  ...clients.filter(c => !unansweredIds.has(c.id) && !completedToday.has(c.id) && !c.start_date),
+                ].map(c => {
+                  const hasMsg = unansweredIds.has(c.id)
+                  const done = completedToday.has(c.id)
+                  const day = calcCurrentDay(c)
+                  return (
+                    <div key={c.id} onClick={() => selectClient(c.id)} style={{ background: 'white', border: `1px solid ${hasMsg ? '#fdba74' : 'var(--stone-200)'}`, borderRadius: '14px', padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', transition: 'box-shadow 0.15s' }}
+                      onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)')}
+                      onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+                    >
+                      {/* Avatar */}
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: hasMsg ? '#f97316' : 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: 'white' }}>{initials(c.name)}</div>
+                        {hasMsg && <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '11px', height: '11px', borderRadius: '50%', background: '#f97316', border: '2px solid white' }} />}
+                      </div>
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--stone-900)', marginBottom: '3px' }}>{c.name}</div>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Day {day} &nbsp;·&nbsp; {c.email}</div>
+                      </div>
+                      {/* Status badges */}
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        {hasMsg && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#fff7ed', border: '1px solid #fdba74', borderRadius: '20px', padding: '4px 12px' }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#f97316' }}>New message</span>
+                          </div>
+                        )}
+                        {c.start_date && (
+                          done ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '20px', padding: '4px 12px' }}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#16a34a' }}>Done today</span>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#fafafa', border: '1px solid var(--stone-200)', borderRadius: '20px', padding: '4px 12px' }}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#a1a1aa' }}>Not done yet</span>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           ) : (
             <>
