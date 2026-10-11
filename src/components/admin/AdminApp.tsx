@@ -116,6 +116,7 @@ export default function AdminApp() {
   }
 
   const [unansweredIds, setUnansweredIds] = useState<Set<string>>(new Set())
+  const [lastAdminMsg, setLastAdminMsg] = useState<Record<string, string>>({})
 
   async function loadClients() {
     const [{ data }, { data: msgs }, { data: completions }] = await Promise.all([
@@ -129,10 +130,13 @@ export default function AdminApp() {
     if (msgs) {
       const seen = new Set<string>()
       const unans = new Set<string>()
+      const lastAdmin: Record<string, string> = {}
       for (const m of msgs) {
         if (!seen.has(m.client_id)) { seen.add(m.client_id); if (!m.from_admin) unans.add(m.client_id) }
+        if (m.from_admin && !lastAdmin[m.client_id]) lastAdmin[m.client_id] = m.created_at
       }
       setUnansweredIds(unans)
+      setLastAdminMsg(lastAdmin)
     }
 
     if (completions) {
@@ -424,6 +428,9 @@ export default function AdminApp() {
                   const hasMsg = unansweredIds.has(c.id)
                   const done = completedToday.has(c.id)
                   const day = calcCurrentDay(c)
+                  const lastMsg = lastAdminMsg[c.id]
+                  const daysSinceMsg = lastMsg ? Math.floor((Date.now() - new Date(lastMsg).getTime()) / 86400000) : null
+                  const needsMessage = daysSinceMsg === null || daysSinceMsg >= 3
                   return (
                     <div key={c.id} onClick={() => selectClient(c.id)} style={{ background: 'white', border: `1px solid ${hasMsg ? '#fdba74' : 'var(--stone-200)'}`, borderRadius: '14px', padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', transition: 'box-shadow 0.15s' }}
                       onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)')}
@@ -445,6 +452,12 @@ export default function AdminApp() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#fff7ed', border: '1px solid #fdba74', borderRadius: '20px', padding: '4px 12px' }}>
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                             <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#f97316' }}>New message</span>
+                          </div>
+                        )}
+                        {needsMessage && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#fef9c3', border: '1px solid #fde047', borderRadius: '20px', padding: '4px 12px' }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ca8a04' }}>{daysSinceMsg === null ? 'Never messaged' : `${daysSinceMsg}d no message`}</span>
                           </div>
                         )}
                         {c.start_date && (
@@ -616,6 +629,33 @@ export default function AdminApp() {
               {/* ── CHECKINS TAB ── */}
               {adminTab === 'checkins' && (
                 <div style={{ maxWidth: '680px' }}>
+
+                  {/* Message templates */}
+                  <div style={{ background: 'white', border: '1px solid var(--stone-200)', borderRadius: '14px', padding: '16px 20px', marginBottom: '20px' }}>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>Quick prompts — click to load</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {[
+                        { label: 'Course', text: 'Have you picked up anything recently from the videos in the course? Anything that stood out to you and made a lot of sense, or something that made no sense you might want to talk about?' },
+                        { label: 'Somatic', text: 'How has the somatic tracking been recently? Have you found it easier and easier to watch the pain from that curious and observant point of view? Has anything come up during your sessions recently?' },
+                        { label: 'Activity', text: 'Give me a progress update on activity — how has your mindset been during? Have you had less fear going into movements, not necessarily less symptoms, but fear itself?' },
+                        { label: 'Visualization', text: 'How\'s the visualization been? Does it make you feel good and excited or is there a bit of hesitation and doubt going into those sessions?' },
+                        { label: 'State of mind', text: 'How has the state of your mind been recently? As in what type of thoughts are coming up regarding this process and the pain itself? Any negative thoughts and doubt?' },
+                        { label: 'Emotions & pain', text: 'Have you noticed any correlation between stress and symptoms and the general state of your body at all recently?' },
+                        { label: 'Biggest doubt', text: 'What\'s the single biggest thought or doubt or thing that you think is holding you back mentally right now? If any at all.' },
+                        { label: 'Affirmations', text: 'How have you been feeling about the affirmations lately? Have you found them helpful for instilling that belief in your mind and replacing the negative thoughts that come up? Any emotion that comes up while you say them?' },
+                        { label: 'Old habits', text: 'Any habits recently that you\'ve caught yourself doing that are part of that old pattern that you have shut down? Or do you feel like your habits are locked in at this point?' },
+                        { label: 'Conviction', text: 'What\'s your level of conviction and confidence in the mind-body diagnosis at this point right now? Has that changed at all recently?' },
+                      ].map(t => (
+                        <button key={t.label} onClick={() => setReplyText(t.text)} style={{ fontFamily: 'inherit', fontSize: '0.76rem', fontWeight: 700, padding: '6px 13px', background: 'var(--stone-50)', border: '1px solid var(--stone-200)', borderRadius: '20px', cursor: 'pointer', color: 'var(--stone-700)', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--blue)'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = 'var(--blue)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'var(--stone-50)'; e.currentTarget.style.color = 'var(--stone-700)'; e.currentTarget.style.borderColor = 'var(--stone-200)' }}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
                     {checkinMessages.length === 0 ? (
                       <div style={{ background: 'white', border: '1px solid var(--stone-200)', borderRadius: '14px', padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
